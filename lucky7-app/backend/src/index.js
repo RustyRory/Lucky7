@@ -21,6 +21,17 @@ const io = new Server(server, {
 });
 
 // --------------------
+// ÉTAT EN MÉMOIRE
+// --------------------
+
+/** @type {Map<string, { id: string, pseudo: string }>} */
+const players = new Map();
+
+function broadcastPlayersList() {
+  io.emit('players:list', Array.from(players.values()));
+}
+
+// --------------------
 // ROUTE TEST
 // --------------------
 app.get('/', (req, res) => {
@@ -31,10 +42,42 @@ app.get('/', (req, res) => {
 // SOCKET.IO
 // --------------------
 io.on('connection', (socket) => {
-  console.log('Un joueur connecté :', socket.id);
+  console.log('Connexion socket :', socket.id);
+
+  // Envoyer la liste actuelle au nouveau connecté
+  socket.emit('players:list', Array.from(players.values()));
+
+  // Un joueur rejoint la partie avec un pseudo
+  socket.on('player:join', (pseudo, callback) => {
+    const trimmed = (pseudo ?? '').trim();
+
+    if (!trimmed || trimmed.length < 2 || trimmed.length > 20) {
+      return callback?.({ error: 'Pseudo invalide (2 à 20 caractères).' });
+    }
+
+    const alreadyTaken = Array.from(players.values()).some(
+      (p) => p.pseudo.toLowerCase() === trimmed.toLowerCase()
+    );
+
+    if (alreadyTaken) {
+      return callback?.({ error: 'Ce pseudo est déjà pris.' });
+    }
+
+    const player = { id: socket.id, pseudo: trimmed };
+    players.set(socket.id, player);
+
+    console.log(`✅ Joueur rejoint : ${trimmed} (${socket.id})`);
+    broadcastPlayersList();
+    callback?.({ player });
+  });
 
   socket.on('disconnect', () => {
-    console.log('Joueur déconnecté :', socket.id);
+    const player = players.get(socket.id);
+    if (player) {
+      console.log(`❌ Joueur parti : ${player.pseudo} (${socket.id})`);
+      players.delete(socket.id);
+      broadcastPlayersList();
+    }
   });
 });
 
