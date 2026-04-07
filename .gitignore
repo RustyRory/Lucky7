@@ -31,7 +31,13 @@ Thumbs.db
 # ── IDE ───────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 # (les Dockerfiles sont versionnés, pas les données)
 data/
+docker-compose.override.yml
+
+# ── Divers ────────────────────────────────────────────────────────────────────
+*.sql
+*.backup
