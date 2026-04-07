@@ -77,3 +77,5 @@ Conditions de fin de partie :
     - Continuer à jouer pour un nouveau tour
     - Décider de s'arrêter et quitter le jeu
     - Permettre à un nouveau joueur de rejoindre la partie
+
+    

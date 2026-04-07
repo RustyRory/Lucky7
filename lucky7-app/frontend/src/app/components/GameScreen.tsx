@@ -7,6 +7,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
+// ---- Types ----
+
 interface Player {
   id: string;
   name: string;
@@ -17,15 +19,11 @@ export interface RulesConfig {
   marchandSable: boolean;
 }
 
-interface GameScreenProps {
-  players: Player[];
-  rules: RulesConfig;
-  onEnd: () => void;
-}
-
-interface PlayerScore {
+interface DiceRoll {
   playerId: string;
-  score: number | '';
+  dice1: number;
+  dice2: number;
+  score: number;
   isDouble: boolean;
 }
 
@@ -35,23 +33,35 @@ interface RoundResult {
   announcement: number;
   playerScores: Array<{
     player: Player;
+    dice1: number;
+    dice2: number;
     score: number;
     distance: number;
     isDouble: boolean;
   }>;
 }
 
+interface GameScreenProps {
+  players: Player[];
+  rules: RulesConfig;
+  onEnd: () => void;
+}
+
 type Phase = 'announce' | 'roll' | 'results';
 
-function emptyScores(players: Player[]): PlayerScore[] {
-  return players.map((p) => ({ playerId: p.id, score: '', isDouble: false }));
+// ---- Helpers ----
+
+const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+function diceFace(n: number) {
+  return DICE_FACES[n - 1] ?? '?';
 }
 
-function canBeDouble(score: number | ''): boolean {
-  if (score === '') return false;
-  const half = (score as number) / 2;
-  return Number.isInteger(half) && half >= 1 && half <= 6;
+function rollD6(): number {
+  return Math.ceil(Math.random() * 6);
 }
+
+// ---- Component ----
 
 export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
   const [round, setRound] = useState(1);
@@ -60,10 +70,16 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
   const [announcementInput, setAnnouncementInput] = useState('');
   const [announcementError, setAnnouncementError] = useState('');
   const [luckyPlayer, setLuckyPlayer] = useState<Player | null>(null);
-  const [scores, setScores] = useState<PlayerScore[]>(emptyScores(players));
+
+  // Roll phase state
+  const [rolledDice, setRolledDice] = useState<DiceRoll[]>([]);
+  const [currentRollerIndex, setCurrentRollerIndex] = useState(0);
+  const [rolling, setRolling] = useState(false);
+
   const [result, setResult] = useState<RoundResult | null>(null);
 
   // ---- ANNOUNCE PHASE ----
+
   function confirmAnnouncement() {
     if (round === 1) {
       setAnnouncement(12);
@@ -81,33 +97,41 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
   }
 
   // ---- ROLL PHASE ----
-  function updateScore(playerId: string, value: string) {
-    const raw = parseInt(value, 10);
-    const clamped: number | '' = isNaN(raw) ? '' : Math.min(12, Math.max(2, raw));
-    setScores((prev) =>
-      prev.map((s) =>
-        s.playerId === playerId
-          ? { ...s, score: clamped, isDouble: canBeDouble(clamped) ? s.isDouble : false }
-          : s
-      )
-    );
+
+  const allRolled = currentRollerIndex >= players.length;
+  const currentPlayer = !allRolled ? players[currentRollerIndex] : null;
+
+  function handleRoll() {
+    if (rolling || allRolled) return;
+    setRolling(true);
+
+    setTimeout(() => {
+      const d1 = rollD6();
+      const d2 = rollD6();
+      const roll: DiceRoll = {
+        playerId: players[currentRollerIndex].id,
+        dice1: d1,
+        dice2: d2,
+        score: d1 + d2,
+        isDouble: d1 === d2,
+      };
+      setRolledDice((prev) => [...prev, roll]);
+      setCurrentRollerIndex((prev) => prev + 1);
+      setRolling(false);
+    }, 700);
   }
 
-  function toggleDouble(playerId: string) {
-    setScores((prev) =>
-      prev.map((s) => (s.playerId === playerId ? { ...s, isDouble: !s.isDouble } : s))
-    );
-  }
-
-  const allFilled = scores.every((s) => s.score !== '' && !isNaN(Number(s.score)));
-
-  function validateScores() {
-    if (!allFilled) return;
-
-    const playerScores = scores.map((s) => {
-      const player = players.find((p) => p.id === s.playerId)!;
-      const score = Number(s.score);
-      return { player, score, distance: Math.abs(score - announcement), isDouble: s.isDouble };
+  function computeResults() {
+    const playerScores = rolledDice.map((roll) => {
+      const player = players.find((p) => p.id === roll.playerId)!;
+      return {
+        player,
+        dice1: roll.dice1,
+        dice2: roll.dice2,
+        score: roll.score,
+        distance: Math.abs(roll.score - announcement),
+        isDouble: roll.isDouble,
+      };
     });
 
     const minDist = Math.min(...playerScores.map((s) => s.distance));
@@ -121,58 +145,47 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
   }
 
   // ---- RESULTS PHASE ----
+
   function getDrinkMessages(): string[] {
     if (!result) return [];
     const msgs: string[] = [];
     const { luckyPlayers, looserPlayers, playerScores, announcement: ann } = result;
 
-    // Lucky
+    // Lucky — toujours actif
     if (luckyPlayers.length === 1) {
       const ls = playerScores.find((s) => s.player.id === luckyPlayers[0].id)!;
       const drinks = ls.score === ann ? 2 : 1;
       msgs.push(
-        `🏆 ${luckyPlayers[0].name} (Lucky) distribue ${drinks} gorgée${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}`
+        `🏆 ${luckyPlayers[0].name} distribue ${drinks} gorgée${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}`
       );
     } else {
-      msgs.push(
-        `🏆 Égalité Lucky : ${luckyPlayers.map((p) => p.name).join(' & ')} — prolongation !`
-      );
+      msgs.push(`🏆 Égalité Lucky : ${luckyPlayers.map((p) => p.name).join(' & ')} — prolongation !`);
     }
 
-    // Looser
+    // Looser — toujours actif
     if (looserPlayers.length === 1) {
-      msgs.push(`💀 ${looserPlayers[0].name} (Looser) boit 1 gorgée`);
+      msgs.push(`💀 ${looserPlayers[0].name} boit 1 gorgée`);
     } else {
-      msgs.push(
-        `💀 Égalité Looser : ${looserPlayers.map((p) => p.name).join(' & ')} — prolongation !`
-      );
+      msgs.push(`💀 Égalité Looser : ${looserPlayers.map((p) => p.name).join(' & ')} — prolongation !`);
     }
 
-    // Double
+    // Double — optionnel
     if (rules.double) {
-      playerScores
-        .filter((s) => s.isDouble)
-        .forEach((s) => {
-          const diceVal = s.score / 2;
-          if (s.score === 2) {
-            msgs.push(
-              `🎲 ${s.player.name} a un Double 1 — distribue 1 gorgée ou fait relancer un joueur`
-            );
-          } else {
-            msgs.push(
-              `🎲 ${s.player.name} a un Double ${diceVal} — distribue ${diceVal} gorgée${diceVal > 1 ? 's' : ''}`
-            );
-          }
-        });
+      playerScores.filter((s) => s.isDouble).forEach((s) => {
+        const diceVal = s.dice1;
+        if (diceVal === 1) {
+          msgs.push(`🎲 ${s.player.name} — Double 1 : distribue 1 gorgée ou fait relancer un joueur`);
+        } else {
+          msgs.push(`🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} gorgée${diceVal > 1 ? 's' : ''}`);
+        }
+      });
     }
 
-    // Marchand de sable
+    // Marchand de sable — optionnel
     if (rules.marchandSable) {
-      playerScores
-        .filter((s) => s.score === 3)
-        .forEach((s) => {
-          msgs.push(`🌙 ${s.player.name} a le Marchand de sable (3) — immunité !`);
-        });
+      playerScores.filter((s) => s.score === 3).forEach((s) => {
+        msgs.push(`🌙 ${s.player.name} — Marchand de sable : immunité !`);
+      });
     }
 
     return msgs;
@@ -185,12 +198,14 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
     setPhase('announce');
     setAnnouncementInput('');
     setAnnouncementError('');
-    setScores(emptyScores(players));
+    setRolledDice([]);
+    setCurrentRollerIndex(0);
     setResult(null);
   }
 
-  // ---- RENDER ----
+  // ======== RENDER ========
 
+  // ---- Announce ----
   if (phase === 'announce') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
@@ -205,9 +220,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
           <CardContent className="flex flex-col gap-4">
             {round === 1 ? (
               <div className="text-center py-2">
-                <p className="text-muted-foreground text-sm mb-3">
-                  Premier tour — annonce automatique
-                </p>
+                <p className="text-muted-foreground text-sm mb-3">Premier tour — annonce automatique</p>
                 <p className="text-6xl font-bold">12</p>
                 <p className="text-sm text-muted-foreground mt-1">"le plus"</p>
               </div>
@@ -220,8 +233,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
                 <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground">
                   Rappel : dire{' '}
                   <span className="font-semibold text-foreground">"le moins"</span> pour 2 et{' '}
-                  <span className="font-semibold text-foreground">"le plus"</span> pour 12 —
-                  sinon 1 gorgée de pénalité
+                  <span className="font-semibold text-foreground">"le plus"</span> pour 12
                 </div>
                 <Input
                   type="number"
@@ -234,9 +246,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
                     setAnnouncementError('');
                   }}
                 />
-                {announcementError && (
-                  <p className="text-destructive text-xs">{announcementError}</p>
-                )}
+                {announcementError && <p className="text-destructive text-xs">{announcementError}</p>}
               </div>
             )}
           </CardContent>
@@ -251,6 +261,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
     );
   }
 
+  // ---- Roll ----
   if (phase === 'roll') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
@@ -262,56 +273,89 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
                 {announcement}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Entrez les scores de chaque joueur (2 – 12)
-            </p>
           </CardHeader>
 
-          <CardContent className="flex flex-col gap-2.5">
-            {scores.map((s) => {
-              const player = players.find((p) => p.id === s.playerId)!;
-              const showDouble = rules.double && canBeDouble(s.score);
-              return (
-                <div
-                  key={s.playerId}
-                  className="flex flex-col gap-1.5 border border-border rounded-lg px-3 py-2.5"
-                >
-                  <span className="text-sm font-medium">{player.name}</span>
-                  <Input
-                    type="number"
-                    min={2}
-                    max={12}
-                    placeholder="Score (2 – 12)"
-                    value={s.score}
-                    onChange={(e) => updateScore(s.playerId, e.target.value)}
-                  />
-                  {showDouble && (
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={s.isDouble}
-                        onChange={() => toggleDouble(s.playerId)}
-                        className="accent-primary"
-                      />
-                      Double ({Number(s.score) / 2}+{Number(s.score) / 2})
-                    </label>
-                  )}
+          <CardContent className="flex flex-col gap-3">
+            {/* Joueurs ayant déjà lancé */}
+            {rolledDice.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                {rolledDice.map((roll) => {
+                  const player = players.find((p) => p.id === roll.playerId)!;
+                  return (
+                    <div
+                      key={roll.playerId}
+                      className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{player.name}</span>
+                        {roll.isDouble && rules.double && (
+                          <Badge variant="secondary" className="text-xs">Double</Badge>
+                        )}
+                        {roll.score === 3 && rules.marchandSable && (
+                          <Badge variant="secondary" className="text-xs">Marchand</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{diceFace(roll.dice1)}{diceFace(roll.dice2)}</span>
+                        <span className="text-sm font-bold w-4 text-right">{roll.score}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Joueur courant ou bouton de résultats */}
+            {!allRolled ? (
+              <>
+                {rolledDice.length > 0 && <Separator />}
+                <div className="flex flex-col items-center gap-4 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    Au tour de{' '}
+                    <span className="font-semibold text-foreground">{currentPlayer!.name}</span>
+                  </p>
+
+                  <div className="text-5xl select-none">
+                    {rolling ? (
+                      <span className="inline-block animate-bounce">🎲🎲</span>
+                    ) : (
+                      <span>🎲🎲</span>
+                    )}
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={handleRoll}
+                    disabled={rolling}
+                  >
+                    {rolling ? 'Lancer…' : 'Lancer les dés'}
+                  </Button>
                 </div>
-              );
-            })}
+              </>
+            ) : (
+              <>
+                <Separator />
+                <p className="text-xs text-muted-foreground text-center">
+                  Tous les joueurs ont lancé
+                </p>
+              </>
+            )}
           </CardContent>
 
-          <CardFooter>
-            <Button className="w-full" size="lg" disabled={!allFilled} onClick={validateScores}>
-              Valider les scores
-            </Button>
-          </CardFooter>
+          {allRolled && (
+            <CardFooter>
+              <Button className="w-full" size="lg" onClick={computeResults}>
+                Voir les résultats
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </div>
     );
   }
 
-  // RESULTS
+  // ---- Results ----
   const drinkMessages = getDrinkMessages();
   const sortedScores = result
     ? [...result.playerScores].sort((a, b) => a.distance - b.distance)
@@ -321,9 +365,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
     <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle className="flex-1">Résultats — Tour {round}</CardTitle>
-          </div>
+          <CardTitle>Résultats — Tour {round}</CardTitle>
           <p className="text-xs text-muted-foreground">Annonce : {announcement}</p>
         </CardHeader>
 
@@ -335,7 +377,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
               return (
                 <div
                   key={s.player.id}
-                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm border ${
+                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
                     isLucky && !isLooser
                       ? 'bg-yellow-500/10 border-yellow-500/40'
                       : isLooser && !isLucky
@@ -346,20 +388,17 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
                   <div className="flex items-center gap-2 flex-wrap">
                     {isLucky && <span>🏆</span>}
                     {isLooser && !isLucky && <span>💀</span>}
-                    <span className="font-medium">{s.player.name}</span>
-                    {s.isDouble && (
-                      <Badge variant="secondary" className="text-xs">
-                        Double
-                      </Badge>
+                    <span className="text-sm font-medium">{s.player.name}</span>
+                    {s.isDouble && rules.double && (
+                      <Badge variant="secondary" className="text-xs">Double</Badge>
                     )}
                     {s.score === 3 && rules.marchandSable && (
-                      <Badge variant="secondary" className="text-xs">
-                        Marchand
-                      </Badge>
+                      <Badge variant="secondary" className="text-xs">Marchand</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="font-bold">{s.score}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-lg">{diceFace(s.dice1)}{diceFace(s.dice2)}</span>
+                    <span className="text-sm font-bold">{s.score}</span>
                     <span className="text-muted-foreground text-xs">
                       {s.distance === 0 ? '(exact !)' : `(±${s.distance})`}
                     </span>
@@ -375,9 +414,7 @@ export default function GameScreen({ players, rules, onEnd }: GameScreenProps) {
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium">Gorgées</p>
                 {drinkMessages.map((msg, i) => (
-                  <p key={i} className="text-sm">
-                    {msg}
-                  </p>
+                  <p key={i} className="text-sm">{msg}</p>
                 ))}
               </div>
             </>
