@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import GameScreen, { type RulesConfig } from './GameScreen';
+import { generateId } from '@/lib/utils';
 
 interface Player {
   id: string;
@@ -81,7 +82,7 @@ export default function SingleDeviceLobby({ onBack }: SingleDeviceLobbyProps) {
       setError('Ce pseudo est déjà dans la partie.');
       return;
     }
-    setPlayers((prev) => [...prev, { id: crypto.randomUUID(), name }]);
+    setPlayers((prev) => [...prev, { id: generateId(), name }]);
     setInput('');
   }
 

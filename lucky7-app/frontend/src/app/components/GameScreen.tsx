@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { generateId } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -345,7 +346,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       setManageError('Ce pseudo est déjà dans la partie.');
       return;
     }
-    setPlayers(prev => [...prev, { id: crypto.randomUUID(), name }]);
+    setPlayers(prev => [...prev, { id: generateId(), name }]);
     setManageInput('');
   }
 
