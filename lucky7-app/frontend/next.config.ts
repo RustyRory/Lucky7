@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   output: 'standalone',
   basePath,
+  trailingSlash: true,
 };
 
 export default nextConfig;
