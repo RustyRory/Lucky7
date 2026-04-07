@@ -57,7 +57,7 @@ Automatisées :
 
 ## Base de données
 
-- PostgreSQL
+- MongoDB
 
 # Architecture globale
 
@@ -66,7 +66,7 @@ Automatisées :
         ↓
 [ Backend API + Socket.IO ]
         ↓
-[ PostgreSQL ]
+[ MongoDB ]
 ```
 
 # Dockerisation
@@ -89,7 +89,7 @@ Tu vas utiliser :
 
 ### Database
 
-- PostgreSQL
+- MongoDB
 
 # Déploiement
 

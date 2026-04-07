@@ -1,3 +1,33 @@
+# Installer MongoDB sur Linux Mint
+```bash
+# Mettre à jour
+sudo apt update
+
+# Installer MongoDB
+sudo apt install -y mongodb
+
+# Vérifier status
+sudo systemctl status mongodb
+
+# Démarrer le service
+sudo systemctl start mongodb
+sudo systemctl enable mongodb
+```
+# Tester la connexion
+```bash
+mongo
+```
+
+shell MongoDB :
+```
+> show dbs
+> use lucky7
+> db.createCollection("players")
+```
+
+# backend/src/index.js
+
+```javascript
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -59,3 +89,4 @@ const startServer = async () => {
 };
 
 startServer();
+```
