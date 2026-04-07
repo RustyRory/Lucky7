@@ -42,8 +42,12 @@ const DISABLED_RULES: DisabledRule[] = [
   { label: 'Jackpot', desc: 'Trois joueurs à 7 → relance pour distribuer un pot' },
   { label: 'Légende', desc: 'Score de 11 (5+6) → joueurs avec dé à 5 ou 6 boivent' },
   { label: 'Démon', desc: 'Trois joueurs à 6 → relance pour distribuer un pot' },
-  { label: 'Mode hard', desc: 'Variantes difficiles (pénalités multipliées)' },
 ];
+
+const HARD_RULE: DisabledRule = {
+  label: 'Mode hard',
+  desc: 'Pénalités doublées à chaque prolongation',
+};
 
 const DEFAULT_RULES: RulesConfig = {
   double: true,
@@ -201,6 +205,15 @@ export default function SingleDeviceLobby({ onBack }: SingleDeviceLobbyProps) {
                   </div>
                 </label>
               ))}
+
+              {/* Mode hard — toujours désactivé, affiché en rouge */}
+              <label className="flex items-start gap-2.5 opacity-60 cursor-not-allowed select-none">
+                <input type="checkbox" disabled className="mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium leading-tight text-destructive">{HARD_RULE.label}</p>
+                  <p className="text-xs text-destructive/70">{HARD_RULE.desc}</p>
+                </div>
+              </label>
             </div>
           </div>
         </CardContent>
