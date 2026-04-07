@@ -19,24 +19,10 @@ Wrote to /home/rusty/Documents/Lucky7/lucky7-app/backend/package.json:
 }
 
 # Installer dépendances
-npm install express socket.io cors dotenv pg
-
-added 102 packages, and audited 103 packages in 3s
-
-24 packages are looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities
+npm install express socket.io cors dotenv mongoose
 
 # Installer nodemon pour dev
 npm install -D nodemon
-
-added 26 packages, and audited 129 packages in 1s
-
-29 packages are looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities
 
 # Créer structure de base
 mkdir src
@@ -84,4 +70,9 @@ io.on('connection', (socket) => {
 // --------------------
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`Backend lancé sur http://localhost:${PORT}`));
+```
+
+Ajouter script dev
+```json
+    "dev": "nodemon src/index.js",
 ```
