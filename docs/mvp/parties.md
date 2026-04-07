@@ -1,4 +1,4 @@
-# MVP — Gestion des parties
+# Gestion des parties
 
 ## Fonctionnalités implémentées
 

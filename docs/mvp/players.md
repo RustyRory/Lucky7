@@ -1,4 +1,4 @@
-# MVP — Gestion des joueurs
+# Gestion des joueurs
 
 ## Fonctionnalités implémentées
 
