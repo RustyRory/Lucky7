@@ -46,13 +46,24 @@ const TOGGLEABLE_RULES: ToggleableRule[] = [
     label: 'Légende',
     desc: 'Score de 11 (5•6) → tous les joueurs avec un dé à 5 ou 6 boivent 1 gorgée',
   },
+  {
+    key: 'jeton',
+    label: 'Jeton',
+    desc: 'Score de 7 → boit 1 gorgée et ajoute +1 au pot (cumulable entre les tours)',
+  },
+  {
+    key: 'jackpot',
+    label: 'Jackpot',
+    desc: '3+ joueurs à 7 → jeton suspendu, reroll pour distribuer le pot',
+  },
+  {
+    key: 'demon',
+    label: 'Démon',
+    desc: '3+ joueurs avec un dé à 6 → reroll pour décider qui boit le pot',
+  },
 ];
 
-const DISABLED_RULES: DisabledRule[] = [
-  { label: 'Jeton', desc: 'Score de 7 → boit 1 gorgée' },
-  { label: 'Jackpot', desc: 'Trois joueurs à 7 → relance pour distribuer un pot' },
-  { label: 'Démon', desc: 'Trois joueurs à 6 → relance pour distribuer un pot' },
-];
+const DISABLED_RULES: DisabledRule[] = [];
 
 const HARD_RULE: DisabledRule = {
   label: 'Mode hard',
@@ -64,6 +75,9 @@ const DEFAULT_RULES: RulesConfig = {
   relance: false,
   marchandSable: true,
   legende: false,
+  jeton: false,
+  jackpot: false,
+  demon: false,
 };
 
 // ---- Rules Config Dialog ----
@@ -137,7 +151,7 @@ function RulesConfigDialog({
 
           <Separator />
 
-          {/* Règles désactivées */}
+          {/* Bientôt disponible */}
           <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Bientôt disponible
