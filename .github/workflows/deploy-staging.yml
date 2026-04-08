@@ -5,10 +5,115 @@ on:
     branches:
       - staging
 
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
 jobs:
+  # ─────────────────────────────────────────────
+  # 1. Lint & Format
+  # ─────────────────────────────────────────────
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: lucky7-app/frontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: lucky7-app/frontend
+
+      - name: TypeScript — vérification des types
+        run: npm run typecheck
+        working-directory: lucky7-app/frontend
+
+      - name: ESLint
+        run: npm run lint
+        working-directory: lucky7-app/frontend
+
+      - name: Prettier — vérification du format
+        run: npm run format:check
+        working-directory: lucky7-app/frontend
+
+  # ─────────────────────────────────────────────
+  # 2. Tests unitaires (Vitest)
+  # ─────────────────────────────────────────────
+  test-unit:
+    name: Tests unitaires
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: lucky7-app/frontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: lucky7-app/frontend
+
+      - name: Vitest
+        run: npm test
+        working-directory: lucky7-app/frontend
+
+  # ─────────────────────────────────────────────
+  # 3. Tests E2E (Playwright)
+  # ─────────────────────────────────────────────
+  test-e2e:
+    name: Tests E2E
+    runs-on: ubuntu-latest
+    needs: [lint, test-unit]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: lucky7-app/frontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: lucky7-app/frontend
+
+      - name: Installer Playwright (Chromium uniquement)
+        run: npx playwright install --with-deps chromium
+        working-directory: lucky7-app/frontend
+
+      - name: Build Next.js (prod)
+        run: npm run build
+        working-directory: lucky7-app/frontend
+
+      - name: Tests Playwright
+        run: npm run test:e2e
+        working-directory: lucky7-app/frontend
+
+      - name: Upload rapport Playwright
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: lucky7-app/frontend/playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # 4. Déploiement (bloqué par lint + tests)
+  # ─────────────────────────────────────────────
   deploy:
     name: Déploiement Lucky7 — staging
     runs-on: ubuntu-latest
+    needs: [lint, test-unit, test-e2e]
 
     steps:
       - name: Checkout code
