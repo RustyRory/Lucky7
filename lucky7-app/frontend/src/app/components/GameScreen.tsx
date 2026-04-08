@@ -482,9 +482,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
         looserProlongations > 0
           ? ` (+${looserProlongations} prolongation${looserProlongations > 1 ? 's' : ''})`
           : '';
-      msgs.push(
-        `💀 ${looserPlayers[0].name} boit ${drinks} ${drinks > 1 ? 's' : ''}${extra}`
-      );
+      msgs.push(`💀 ${looserPlayers[0].name} boit ${drinks} ${drinks > 1 ? 's' : ''}${extra}`);
     }
 
     // Double — optionnel, suspendu pendant les prolongations (déjà géré : on affiche à la fin)
@@ -494,9 +492,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
         .forEach(s => {
           const diceVal = s.dice1;
           if (diceVal === 1) {
-            msgs.push(
-              `🎲 ${s.player.name} — Double 1 : distribue 1 ou fait relancer un joueur`
-            );
+            msgs.push(`🎲 ${s.player.name} — Double 1 : distribue 1 ou fait relancer un joueur`);
           } else {
             msgs.push(
               `🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} ${diceVal > 1 ? 's' : ''}`

@@ -158,7 +158,9 @@ function RulesConfigDialog({
             ))}
             <div className="flex items-center gap-3 rounded-xl px-3 py-3 bg-destructive/5 opacity-50">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium leading-tight text-destructive">{HARD_RULE.label}</p>
+                <p className="text-sm font-medium leading-tight text-destructive">
+                  {HARD_RULE.label}
+                </p>
                 <p className="text-xs text-destructive/70 mt-0.5">{HARD_RULE.desc}</p>
               </div>
               <div className="relative shrink-0 w-11 h-6 rounded-full bg-destructive/20">
