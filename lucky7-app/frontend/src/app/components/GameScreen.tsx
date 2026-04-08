@@ -106,6 +106,10 @@ export interface RulesConfig {
   double: boolean;
   relance: boolean;
   marchandSable: boolean;
+  legende: boolean;
+  jeton: boolean;
+  jackpot: boolean;
+  demon: boolean;
 }
 
 // ---- Rules Dialog ----
@@ -165,6 +169,26 @@ function RulesDialog({ rules, onClose }: { rules: RulesConfig; onClose: () => vo
             active={rules.marchandSable}
             desc="Score de 3 → immunité ce tour"
           />
+          <RuleItem
+            label="Légende"
+            active={rules.legende}
+            desc="Score de 11 (5+6) → tous les joueurs avec un dé à 5 ou 6 boivent"
+          />
+          <RuleItem
+            label="Jeton"
+            active={rules.jeton}
+            desc="Score de 7 → boit 1 gorgée et ajoute +1 au pot"
+          />
+          <RuleItem
+            label="Jackpot"
+            active={rules.jackpot}
+            desc="3+ joueurs à 7 → jeton suspendu, reroll pour distribuer le pot"
+          />
+          <RuleItem
+            label="Démon"
+            active={rules.demon}
+            desc="3+ joueurs avec un dé à 6 → reroll pour décider qui boit le pot"
+          />
         </div>
       </div>
     </div>
@@ -179,6 +203,21 @@ interface DiceRoll {
   isDouble: boolean;
 }
 
+interface SpecialEventResult {
+  type: 'jackpot' | 'demon';
+  winner: Player;
+  potValue: number;
+}
+
+interface SpecialEventState {
+  type: 'jackpot' | 'demon';
+  triggerPlayers: Player[];
+  potValue: number;
+  dice: DiceRoll[];
+  rollerIndex: number;
+  rolling: boolean;
+}
+
 interface RoundResult {
   luckyPlayers: Player[];
   looserPlayers: Player[];
@@ -191,6 +230,8 @@ interface RoundResult {
     distance: number;
     isDouble: boolean;
   }>;
+  jackpotTriggered: boolean;
+  specialResults: SpecialEventResult[];
 }
 
 interface ProlongationState {
@@ -207,7 +248,7 @@ interface GameScreenProps {
   onEnd: () => void;
 }
 
-type Phase = 'announce' | 'roll' | 'results' | 'prolongation' | 'manage-players';
+type Phase = 'announce' | 'roll' | 'results' | 'prolongation' | 'special-event' | 'manage-players';
 
 // ---- Helpers ----
 
@@ -243,9 +284,17 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   const [result, setResult] = useState<RoundResult | null>(null);
   const [luckyProlongations, setLuckyProlongations] = useState(0);
   const [looserProlongations, setLooserProlongations] = useState(0);
+  // Cumulative sip bonus from prolongations (sum of participants−1 per round)
+  const [luckyProlongBonus, setLuckyProlongBonus] = useState(0);
+  const [looserProlongBonus, setLooserProlongBonus] = useState(0);
 
   // Prolongation state
   const [prolongation, setProlongation] = useState<ProlongationState | null>(null);
+
+  // Special events (jackpot / demon) — queue, premier élément = en cours
+  const [specialEvents, setSpecialEvents] = useState<SpecialEventState[]>([]);
+  // Pot de gorgées accumulé par la règle Jeton (persiste entre les tours)
+  const [pot, setPot] = useState(0);
 
   // Relance state
   const [relancePending, setRelancePending] = useState(false);
@@ -350,8 +399,73 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     const luckyPlayers = playerScores.filter(s => s.distance === minDist).map(s => s.player);
     const looserPlayers = playerScores.filter(s => s.distance === maxDist).map(s => s.player);
 
-    setResult({ luckyPlayers, looserPlayers, announcement, playerScores });
-    setPhase('results');
+    // ── Détection événements spéciaux ──
+    const events: SpecialEventState[] = [];
+    let jackpotTriggered = false;
+
+    const sevensPlayers = playerScores.filter(s => s.score === 7);
+
+    // Jackpot : exactement 3 joueurs à 7
+    if (rules.jackpot && sevensPlayers.length === 3) {
+      jackpotTriggered = true;
+    }
+
+    // Mise à jour du pot Jeton (seulement si jackpot ne suspend pas la règle)
+    let currentPot = pot;
+    if (rules.jeton && !jackpotTriggered && sevensPlayers.length > 0) {
+      currentPot = pot + sevensPlayers.length;
+      setPot(currentPot);
+    }
+
+    // Construction des événements — chacun capture sa valeur de pot
+    let potAvailable = currentPot;
+
+    if (jackpotTriggered) {
+      const jackpotPot = potAvailable > 0 ? potAvailable : rollD6();
+      potAvailable = 0;
+      events.push({
+        type: 'jackpot',
+        triggerPlayers: sevensPlayers.map(s => s.player),
+        potValue: jackpotPot,
+        dice: [],
+        rollerIndex: 0,
+        rolling: false,
+      });
+    }
+
+    // Démon : exactement 3 joueurs avec un score (somme) de 6
+    const demonPlayers = playerScores.filter(s => s.score === 6);
+    if (rules.demon && demonPlayers.length === 3) {
+      const demonPot = potAvailable > 0 ? potAvailable : rollD6();
+      potAvailable = 0;
+      events.push({
+        type: 'demon',
+        triggerPlayers: demonPlayers.map(s => s.player),
+        potValue: demonPot,
+        dice: [],
+        rollerIndex: 0,
+        rolling: false,
+      });
+    }
+
+    // Si un événement spécial s'est produit, le pot est consommé → remise à zéro
+    if (events.length > 0) setPot(0);
+
+    setResult({
+      luckyPlayers,
+      looserPlayers,
+      announcement,
+      playerScores,
+      jackpotTriggered,
+      specialResults: [],
+    });
+
+    if (events.length > 0) {
+      setSpecialEvents(events);
+      setPhase('special-event');
+    } else {
+      setPhase('results');
+    }
   }
 
   // =====================
@@ -408,6 +522,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       const minDist = Math.min(...scores.map(s => s.distance));
       const winners = scores.filter(s => s.distance === minDist).map(s => s.player);
       setLuckyProlongations(prev => prev + 1);
+      setLuckyProlongBonus(prev => prev + (tiedPlayers.length - 1));
       if (winners.length === 1) {
         setResult(prev => (prev ? { ...prev, luckyPlayers: winners } : prev));
         setProlongation(null);
@@ -427,6 +542,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       const maxDist = Math.max(...scores.map(s => s.distance));
       const losers = scores.filter(s => s.distance === maxDist).map(s => s.player);
       setLooserProlongations(prev => prev + 1);
+      setLooserProlongBonus(prev => prev + (tiedPlayers.length - 1));
       if (losers.length === 1) {
         setResult(prev => (prev ? { ...prev, looserPlayers: losers } : prev));
         setProlongation(null);
@@ -444,59 +560,172 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   }
 
   // =====================
+  // SPECIAL EVENTS (JACKPOT / DEMON)
+  // =====================
+
+  function handleSpecialEventRoll() {
+    const event = specialEvents[0];
+    if (!event || event.rolling || event.rollerIndex >= event.triggerPlayers.length) return;
+    setSpecialEvents(prev => [{ ...prev[0], rolling: true }, ...prev.slice(1)]);
+    setTimeout(() => {
+      setSpecialEvents(prev => {
+        const current = prev[0];
+        if (!current) return prev;
+        const d1 = rollD6(),
+          d2 = rollD6();
+        const roll: DiceRoll = {
+          playerId: current.triggerPlayers[current.rollerIndex].id,
+          dice1: d1,
+          dice2: d2,
+          score: d1 + d2,
+          isDouble: d1 === d2,
+        };
+        return [
+          {
+            ...current,
+            dice: [...current.dice, roll],
+            rollerIndex: current.rollerIndex + 1,
+            rolling: false,
+          },
+          ...prev.slice(1),
+        ];
+      });
+    }, 700);
+  }
+
+  function resolveSpecialEvent() {
+    const event = specialEvents[0];
+    if (!event) return;
+
+    const scores = event.dice.map(d => ({
+      player: event.triggerPlayers.find(p => p.id === d.playerId)!,
+      score: d.score,
+      distance: Math.abs(d.score - announcement),
+    }));
+
+    if (event.type === 'jackpot') {
+      // Le plus proche distribue le pot
+      const minDist = Math.min(...scores.map(s => s.distance));
+      const winners = scores.filter(s => s.distance === minDist);
+      if (winners.length === 1) {
+        setResult(prev =>
+          prev
+            ? {
+                ...prev,
+                specialResults: [
+                  ...prev.specialResults,
+                  { type: 'jackpot', winner: winners[0].player, potValue: event.potValue },
+                ],
+              }
+            : prev
+        );
+        proceedToNextSpecialEvent();
+      } else {
+        // Égalité : reroll avec les joueurs à égalité
+        setSpecialEvents(prev => [
+          {
+            ...event,
+            triggerPlayers: winners.map(s => s.player),
+            dice: [],
+            rollerIndex: 0,
+            rolling: false,
+          },
+          ...prev.slice(1),
+        ]);
+      }
+    } else {
+      // Démon : le plus éloigné boit le pot
+      const maxDist = Math.max(...scores.map(s => s.distance));
+      const losers = scores.filter(s => s.distance === maxDist);
+      if (losers.length === 1) {
+        setResult(prev =>
+          prev
+            ? {
+                ...prev,
+                specialResults: [
+                  ...prev.specialResults,
+                  { type: 'demon', winner: losers[0].player, potValue: event.potValue },
+                ],
+              }
+            : prev
+        );
+        proceedToNextSpecialEvent();
+      } else {
+        setSpecialEvents(prev => [
+          {
+            ...event,
+            triggerPlayers: losers.map(s => s.player),
+            dice: [],
+            rollerIndex: 0,
+            rolling: false,
+          },
+          ...prev.slice(1),
+        ]);
+      }
+    }
+  }
+
+  function proceedToNextSpecialEvent() {
+    const remaining = specialEvents.slice(1);
+    setSpecialEvents(remaining);
+    if (remaining.length === 0) setPhase('results');
+  }
+
+  // =====================
   // RESULTS — DRINK CALC
   // =====================
 
   function getDrinkMessages(): string[] {
     if (!result) return [];
     const msgs: string[] = [];
-    const { luckyPlayers, looserPlayers, playerScores, announcement: ann } = result;
+    const {
+      luckyPlayers,
+      looserPlayers,
+      playerScores,
+      announcement: ann,
+      jackpotTriggered,
+      specialResults,
+    } = result;
 
-    // Lucky — toujours actif, +1 gorgée par prolongation
+    // Lucky
     if (luckyPlayers.length === 1) {
       const ls = playerScores.find(s => s.player.id === luckyPlayers[0].id)!;
       const base = ls.score === ann ? 2 : 1;
-      const drinks = base + luckyProlongations;
+      const drinks = base + luckyProlongBonus;
       const extra =
         luckyProlongations > 0
-          ? ` (+${luckyProlongations} prolongation${luckyProlongations > 1 ? 's' : ''})`
+          ? ` (+${luckyProlongBonus} via ${luckyProlongations} prolongation${luckyProlongations > 1 ? 's' : ''})`
           : '';
       msgs.push(
-        `🏆 ${luckyPlayers[0].name} distribue ${drinks} gorgée${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}${extra}`
+        `🏆 ${luckyPlayers[0].name} distribue ${drinks} ${ls.score === ann ? ' — score exact !' : ''}${extra}`
       );
     }
 
-    // Looser — toujours actif, +1 gorgée par prolongation
+    // Looser
     if (looserPlayers.length === 1) {
-      const drinks = 1 + looserProlongations;
+      const drinks = 1 + looserProlongBonus;
       const extra =
         looserProlongations > 0
-          ? ` (+${looserProlongations} prolongation${looserProlongations > 1 ? 's' : ''})`
+          ? ` (+${looserProlongBonus} via ${looserProlongations} prolongation${looserProlongations > 1 ? 's' : ''})`
           : '';
-      msgs.push(
-        `💀 ${looserPlayers[0].name} boit ${drinks} gorgée${drinks > 1 ? 's' : ''}${extra}`
-      );
+      msgs.push(`💀 ${looserPlayers[0].name} boit ${drinks} ${extra}`);
     }
 
-    // Double — optionnel, suspendu pendant les prolongations (déjà géré : on affiche à la fin)
+    // Double
     if (rules.double) {
       playerScores
         .filter(s => s.isDouble)
         .forEach(s => {
           const diceVal = s.dice1;
           if (diceVal === 1) {
-            msgs.push(
-              `🎲 ${s.player.name} — Double 1 : distribue 1 gorgée ou fait relancer un joueur`
-            );
+            msgs.push(`🎲 ${s.player.name} — Double 1 : distribue 1 ou fait relancer les dés`);
           } else {
-            msgs.push(
-              `🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} gorgée${diceVal > 1 ? 's' : ''}`
-            );
+            msgs.push(`🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal}`);
           }
         });
     }
 
-    // Marchand de sable — optionnel
+    // Marchand de sable
     if (rules.marchandSable) {
       playerScores
         .filter(s => s.score === 3)
@@ -504,6 +733,40 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           msgs.push(`🌙 ${s.player.name} — Marchand de sable : immunité !`);
         });
     }
+
+    // Légende
+    if (rules.legende) {
+      const legendeTriggered = playerScores.some(s => s.score === 11);
+      if (legendeTriggered) {
+        const affected = playerScores.filter(
+          s => s.dice1 === 5 || s.dice1 === 6 || s.dice2 === 5 || s.dice2 === 6
+        );
+        if (affected.length > 0) {
+          const names = affected.map(s => s.player.name).join(', ');
+          msgs.push(
+            `⭐ Légende ! ${names} boi${affected.length > 1 ? 'vent' : 't'} 1 (dé à 5 ou 6)`
+          );
+        }
+      }
+    }
+
+    // Jeton (suspendu si jackpot déclenché)
+    if (rules.jeton && !jackpotTriggered) {
+      playerScores
+        .filter(s => s.score === 7)
+        .forEach(s => {
+          msgs.push(`🪙 ${s.player.name} — Jeton : boit 1 (+1🪙 au pot, total : ${pot})`);
+        });
+    }
+
+    // Résultats jackpot / démon
+    specialResults.forEach(sr => {
+      if (sr.type === 'jackpot') {
+        msgs.push(`🎰 Jackpot ! ${sr.winner.name} distribue ${sr.potValue}`);
+      } else {
+        msgs.push(`😈 Démon ! ${sr.winner.name} boit ${sr.potValue}`);
+      }
+    });
 
     return msgs;
   }
@@ -556,7 +819,11 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     setResult(null);
     setLuckyProlongations(0);
     setLooserProlongations(0);
+    setLuckyProlongBonus(0);
+    setLooserProlongBonus(0);
     setProlongation(null);
+    setSpecialEvents([]);
+    // pot persiste entre les tours
     setRelancePending(false);
     setRelancedPlayerIds(new Set());
   }
@@ -660,6 +927,11 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                   ⚙️
                 </Button>
               </div>
+              {rules.jeton && pot > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Pot : <span className="font-semibold text-foreground">{pot} 🪙</span>
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 {allRolled ? (
                   'Tous les joueurs ont lancé'
@@ -720,12 +992,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         )}
                         {roll && !showAnim && roll.score === 3 && rules.marchandSable && (
                           <Badge variant="secondary" className="text-xs shrink-0">
-                            Marchand
+                            Marchand de sable
                           </Badge>
                         )}
                         {relancedPlayerIds.has(player.id) && (
                           <Badge variant="outline" className="text-xs shrink-0">
-                            Relancé
+                            Relance
                           </Badge>
                         )}
                       </div>
@@ -805,12 +1077,142 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     );
   }
 
+  // ---- Special Event (Jackpot / Démon) ----
+  if (phase === 'special-event' && specialEvents.length > 0) {
+    const event = specialEvents[0];
+    const eventAllRolled = event.rollerIndex >= event.triggerPlayers.length;
+    const eventCurrentPlayer = !eventAllRolled ? event.triggerPlayers[event.rollerIndex] : null;
+    const isJackpot = event.type === 'jackpot';
+
+    return (
+      <>
+        {showRulesDialog && <RulesDialog rules={rules} onClose={() => setShowRulesDialog(false)} />}
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex-1">
+                  {isJackpot ? '🎰 Jackpot !' : '😈 Démon !'}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRulesDialog(true)}
+                  className="px-2 text-muted-foreground"
+                  aria-label="Paramètres"
+                >
+                  ⚙️
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pot :{' '}
+                <span className="font-semibold text-foreground">
+                  {event.potValue} jeton{event.potValue > 1 ? 's' : ''}
+                </span>
+                {isJackpot ? ' à distribuer' : ' à boire'} · Annonce : {announcement}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {eventAllRolled ? (
+                  'Tous les joueurs ont lancé'
+                ) : event.rolling ? (
+                  <>
+                    <span className="font-semibold text-foreground">
+                      {eventCurrentPlayer!.name}
+                    </span>{' '}
+                    lance les dés…
+                  </>
+                ) : (
+                  <>
+                    Au tour de{' '}
+                    <span className="font-semibold text-foreground">
+                      {eventCurrentPlayer!.name}
+                    </span>{' '}
+                    de lancer
+                  </>
+                )}
+              </p>
+            </CardHeader>
+
+            <CardContent className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                {event.triggerPlayers.map((player, index) => {
+                  const roll = event.dice.find(r => r.playerId === player.id);
+                  const isCurrent = index === event.rollerIndex && !eventAllRolled;
+                  const showAnim = isCurrent && event.rolling;
+
+                  return (
+                    <div
+                      key={player.id}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
+                        isCurrent && !roll ? 'border-primary/40 bg-primary/5' : 'border-border'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isCurrent && !roll && !event.rolling && (
+                          <span className="text-xs text-primary shrink-0">▶</span>
+                        )}
+                        <span
+                          className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}
+                        >
+                          {player.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {showAnim ? (
+                          <>
+                            <div className="flex gap-1">
+                              <DiceFace value={previewD1} size={30} rolling />
+                              <DiceFace value={previewD2} size={30} rolling />
+                            </div>
+                            <span className="text-sm font-bold w-4" />
+                          </>
+                        ) : roll ? (
+                          <>
+                            <div className="flex gap-1">
+                              <DiceFace value={roll.dice1} size={30} />
+                              <DiceFace value={roll.dice2} size={30} />
+                            </div>
+                            <span className="text-sm font-bold w-4 text-right">{roll.score}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground pr-6">—</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+
+            <CardFooter>
+              {eventAllRolled ? (
+                <Button className="w-full" size="lg" onClick={resolveSpecialEvent}>
+                  {isJackpot ? 'Résoudre le Jackpot' : 'Résoudre le Démon'}
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleSpecialEventRoll}
+                  disabled={event.rolling}
+                >
+                  {event.rolling ? 'Lancer…' : 'Lancer les dés'}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
   // ---- Prolongation ----
   if (phase === 'prolongation' && prolongation) {
     const completedProlongations =
       prolongation.type === 'lucky' ? luckyProlongations : looserProlongations;
     const prolNumber = completedProlongations + 1;
-    const drinkStake = 1 + prolNumber;
+    const accumulatedBonus = prolongation.type === 'lucky' ? luckyProlongBonus : looserProlongBonus;
+    const drinkStake = 1 + accumulatedBonus + (prolongation.players.length - 1);
     const isLuckyType = prolongation.type === 'lucky';
 
     return (
@@ -837,9 +1239,15 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               <p className="text-xs text-muted-foreground">
                 Enjeu :{' '}
                 <span className="font-semibold text-foreground">
-                  {drinkStake} gorgée{drinkStake > 1 ? 's' : ''}
+                  {drinkStake} Gorgée{drinkStake > 1 ? 's' : ''}
                 </span>
                 {' · '}Annonce : {announcement}
+                {rules.jeton && pot > 0 && (
+                  <>
+                    {' · '}
+                    <span className="font-semibold text-foreground">Pot : {pot} 🪙</span>
+                  </>
+                )}
               </p>
               <p className="text-sm text-muted-foreground">
                 {prolAllRolled ? (
@@ -1055,7 +1463,14 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                 ⚙️
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Annonce : {announcement}</p>
+            <p className="text-xs text-muted-foreground">
+              Annonce : {announcement}
+              {rules.jeton && pot > 0 && (
+                <>
+                  {' · '}Pot : <span className="font-semibold text-foreground">{pot} 🪙</span>
+                </>
+              )}
+            </p>
           </CardHeader>
 
           <CardContent className="flex flex-col gap-4">
