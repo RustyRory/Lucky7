@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+// CardTitle est un <div data-slot="card-title">, pas un heading HTML
+const cardTitle = (page: import('@playwright/test').Page, name: string) =>
+  page.locator('[data-slot="card-title"]', { hasText: name });
+
 test.describe("Page d'accueil", () => {
   test('affiche le titre et les boutons principaux', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Lucky7' })).toBeVisible();
+    await expect(cardTitle(page, 'Lucky7')).toBeVisible();
     await expect(page.getByRole('button', { name: '1 appareil' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Règles du jeu' })).toBeVisible();
     await expect(page.getByRole('button', { name: /À propos/i })).toBeVisible();
@@ -19,7 +23,7 @@ test.describe('Règles du jeu', () => {
   test('navigue vers la page des règles', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Règles du jeu' }).click();
-    await expect(page.getByRole('heading', { name: 'Règles du jeu' })).toBeVisible();
+    await expect(cardTitle(page, 'Règles du jeu')).toBeVisible();
     await expect(page.getByText('Préparation')).toBeVisible();
     await expect(page.getByText('Règles spéciales')).toBeVisible();
   });
@@ -28,7 +32,7 @@ test.describe('Règles du jeu', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Règles du jeu' }).click();
     await page.getByRole('button', { name: '←' }).first().click();
-    await expect(page.getByRole('heading', { name: 'Lucky7' })).toBeVisible();
+    await expect(cardTitle(page, 'Lucky7')).toBeVisible();
   });
 });
 
@@ -73,6 +77,6 @@ test.describe('Lobby — 1 appareil', () => {
     }
 
     await page.getByRole('button', { name: 'Lancer la partie' }).click();
-    await expect(page.getByText('Tour 1')).toBeVisible();
+    await expect(cardTitle(page, 'Tour 1')).toBeVisible();
   });
 });

@@ -11,6 +11,10 @@ Le format est basé sur Keep a Changelog et ce projet adhère au Semantic Versio
 
 ### Added
 
+* **Phase de lancer — tableau permanent** — tous les joueurs sont affichés dans un tableau dès le début du tour. Les joueurs en attente apparaissent en grisé avec `—`. L'animation des dés se déroule directement dans la ligne du joueur concerné (plus de dés centraux séparés).
+* **Phase de prolongation** — même refonte que la phase de lancer : tableau permanent, animation inline, joueurs en attente grisés.
+* **Titre dynamique** — le header des phases roll et prolongation affiche en temps réel qui doit lancer (`Au tour de X de lancer` / `X lance les dés…` / `X — Double 1, relance disponible` / `Tous les joueurs ont lancé`).
+* **Points des dés** — rayon des points passé de `size × 0.09` (trop petit aux petites tailles) à `9` unités SVG fixes pour une lisibilité constante quelle que soit la taille d'affichage.
 * **Règle Relance (Double 1)** — nouvelle règle optionnelle : un joueur qui fait 1•1 peut relancer ses deux dés une fois. Activable dans la configuration de partie. Si le joueur relance, son résultat est remplacé et un badge « Relancé » s'affiche dans le tableau. S'il garde le 1•1, la règle Double classique s'applique.
 * **Dialog de configuration des règles (lobby)** — les règles ne sont plus affichées inline dans l'écran de configuration. Un bouton ⚙️ Configurer ouvre un bottom sheet (glisse depuis le bas sur mobile, centré sur desktop) permettant d'activer/désactiver chaque règle. Les règles actives sont résumées sous forme de badges dans le lobby.
 * **Dialog des paramètres en jeu (GameScreen)** — un bouton ⚙️ dans le header de chaque phase (annonce, lancer, prolongation, résultats) affiche les règles actives de la partie en cours (✓ vert / ✗ grisé).
@@ -21,10 +25,6 @@ Le format est basé sur Keep a Changelog et ce projet adhère au Semantic Versio
 
 ### Changed
 
-* **Phase de lancer — tableau permanent** — tous les joueurs sont affichés dans un tableau dès le début du tour. Les joueurs en attente apparaissent en grisé avec `—`. L'animation des dés se déroule directement dans la ligne du joueur concerné (plus de dés centraux séparés).
-* **Phase de prolongation** — même refonte que la phase de lancer : tableau permanent, animation inline, joueurs en attente grisés.
-* **Titre dynamique** — le header des phases roll et prolongation affiche en temps réel qui doit lancer (`Au tour de X de lancer` / `X lance les dés…` / `X — Double 1, relance disponible` / `Tous les joueurs ont lancé`).
-* **Points des dés** — rayon des points passé de `size × 0.09` (trop petit aux petites tailles) à `9` unités SVG fixes pour une lisibilité constante quelle que soit la taille d'affichage.
 * **Déploiement staging** — le job `deploy` est désormais conditionné par les jobs `lint`, `test-unit` et `test-e2e` via `needs`. Un déploiement échoue automatiquement si l'un des checks ne passe pas.
 * **Scripts `package.json`** — ajout de `typecheck`, `format`, `format:check`, `test`, `test:watch`, `test:coverage`, `test:e2e`, `test:e2e:ui`.
 
