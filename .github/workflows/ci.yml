@@ -1,12 +1,17 @@
-name: Deploy to VPS (staging)
+name: CI
 
 on:
   push:
+    branches-ignore:
+      - staging  # géré par deploy-staging.yml qui inclut ces checks
+  pull_request:
     branches:
+      - main
       - staging
+      - dev
 
 concurrency:
-  group: deploy-staging
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -63,8 +68,16 @@ jobs:
         working-directory: lucky7-app/frontend
 
       - name: Vitest
-        run: npm test
+        run: npm run test:coverage
         working-directory: lucky7-app/frontend
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: lucky7-app/frontend/coverage/
+          retention-days: 7
 
   # ─────────────────────────────────────────────
   # 3. Tests E2E (Playwright)
@@ -72,7 +85,7 @@ jobs:
   test-e2e:
     name: Tests E2E
     runs-on: ubuntu-latest
-    needs: [lint, test-unit]
+    needs: [lint, test-unit]  # ne lance l'E2E que si lint + unit passent
 
     steps:
       - uses: actions/checkout@v4
@@ -106,71 +119,3 @@ jobs:
           name: playwright-report
           path: lucky7-app/frontend/playwright-report/
           retention-days: 7
-
-  # ─────────────────────────────────────────────
-  # 4. Déploiement (bloqué par lint + tests)
-  # ─────────────────────────────────────────────
-  deploy:
-    name: Déploiement Lucky7 — staging
-    runs-on: ubuntu-latest
-    needs: [lint, test-unit, test-e2e]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          command_timeout: 30m
-          script: |
-            set -e
-            echo "🚀 Déploiement Lucky7 — staging"
-
-            REPO_DIR="/var/www/Lucky7"
-            COMPOSE_FILE="/var/www/docker-compose.yml"
-
-            # ── Cloner ou mettre à jour le repo ──────────────────────────
-            if [ ! -d "$REPO_DIR/.git" ]; then
-              echo "📥 Premier déploiement — clonage du repo..."
-              git clone https://github.com/${{ github.repository }}.git "$REPO_DIR"
-              git -C "$REPO_DIR" checkout staging
-            else
-              echo "🔄 Mise à jour du code..."
-              git -C "$REPO_DIR" fetch origin staging
-              git -C "$REPO_DIR" reset --hard origin/staging
-            fi
-            echo "✅ Code à jour"
-
-            # ── Vérifier que le .env backend existe ───────────────────────
-            ENV_FILE="$REPO_DIR/lucky7-app/backend/.env"
-            if [ ! -f "$ENV_FILE" ]; then
-              echo "❌ Fichier .env manquant : $ENV_FILE"
-              echo "   Créez-le manuellement sur le VPS avant de déployer."
-              exit 1
-            fi
-            echo "✅ Fichier .env backend trouvé"
-
-            # ── Rebuild et restart uniquement les services Lucky7 ─────────
-            echo "🔨 Build des images..."
-            docker-compose -f "$COMPOSE_FILE" build lucky7-back lucky7-front
-
-            echo "🔄 Redémarrage des containers..."
-            docker-compose -f "$COMPOSE_FILE" up -d --remove-orphans lucky7-back lucky7-front
-
-            echo "✅ Containers démarrés"
-
-            # ── Nettoyage des images obsolètes ────────────────────────────
-            docker image prune -f
-
-            # ── Vérification finale ───────────────────────────────────────
-            echo ""
-            echo "📊 État des containers Lucky7 :"
-            docker ps --filter "name=lucky7-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-            echo ""
-            echo "🎉 Déploiement terminé !"

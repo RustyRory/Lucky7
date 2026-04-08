@@ -7,12 +7,20 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "e2e/**",         // Tests Playwright — règles React non pertinentes
+    "coverage/**",
+    "playwright-report/**",
   ]),
+  {
+    rules: {
+      // Désactivé : trop strict pour le français (apostrophes naturelles)
+      "react/no-unescaped-entities": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -5,6 +5,23 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur Keep a Changelog et ce projet adhère au Semantic Versioning.
 
 ## [Unreleased]
+---
+
+## [0.2.0] - 2026-04-08
+
+### Added
+
+---
+
+## [0.1.1] - 2026-04-07
+
+### Added
+
+* Environnements : dev / staging
+* Pipelines :
+    * Tests unitaires & e2e
+    * Lint / format
+    * Build & déploiement automatique
 
 ---
 

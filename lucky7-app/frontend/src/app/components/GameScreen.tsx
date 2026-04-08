@@ -22,7 +22,7 @@ const DOT_POSITIONS: Record<number, [number, number][]> = {
 
 function DiceFace({ value, size = 56, rolling = false }: { value: number; size?: number; rolling?: boolean }) {
   const dots = DOT_POSITIONS[value] ?? [];
-  const r = size * 0.09;
+  const r = 9;
   return (
     <svg
       width={size}
@@ -64,7 +64,48 @@ interface Player {
 
 export interface RulesConfig {
   double: boolean;
+  relance: boolean;
   marchandSable: boolean;
+}
+
+// ---- Rules Dialog ----
+
+function RuleItem({ label, active, desc }: { label: string; active: boolean; desc: string }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className={`text-sm shrink-0 mt-0.5 ${active ? 'text-green-500' : 'text-muted-foreground'}`}>
+        {active ? '✓' : '✗'}
+      </span>
+      <div>
+        <p className={`text-sm font-medium leading-tight ${!active ? 'text-muted-foreground' : ''}`}>{label}</p>
+        <p className="text-xs text-muted-foreground">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function RulesDialog({ rules, onClose }: { rules: RulesConfig; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-background rounded-xl border border-border shadow-lg w-full max-w-xs mx-4 p-5"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-semibold">Paramètres de la partie</p>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none">✕</button>
+        </div>
+        <div className="flex flex-col gap-3">
+          <RuleItem label="Double" active={rules.double} desc="Deux dés identiques → distribue autant de gorgées que la valeur" />
+          <RuleItem label="Relance (Double 1)" active={rules.relance} desc="Double 1 → peut relancer ses dés une fois" />
+          <RuleItem label="Marchand de sable" active={rules.marchandSable} desc="Score de 3 → immunité ce tour" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface DiceRoll {
@@ -131,7 +172,6 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   const [rolledDice, setRolledDice] = useState<DiceRoll[]>([]);
   const [rollerIndex, setRollerIndex] = useState(0);
   const [rolling, setRolling] = useState(false);
-  const [lastRolledId, setLastRolledId] = useState<string | null>(null);
   const [previewD1, previewD2] = useRollingDice(rolling);
 
   // Results + prolongation counters
@@ -141,6 +181,13 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
 
   // Prolongation state
   const [prolongation, setProlongation] = useState<ProlongationState | null>(null);
+
+  // Relance state
+  const [relancePending, setRelancePending] = useState(false);
+  const [relancedPlayerIds, setRelancedPlayerIds] = useState<Set<string>>(new Set());
+
+  // Rules dialog
+  const [showRulesDialog, setShowRulesDialog] = useState(false);
 
   // =====================
   // ANNOUNCE PHASE
@@ -170,21 +217,50 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   const currentPlayer = !allRolled ? players[rollerIndex] : null;
 
   function handleRoll() {
-    if (rolling || allRolled) return;
+    if (rolling || allRolled || relancePending) return;
     setRolling(true);
     setTimeout(() => {
       const d1 = rollD6(), d2 = rollD6();
+      const playerId = players[rollerIndex].id;
       const roll: DiceRoll = {
-        playerId: players[rollerIndex].id,
+        playerId,
         dice1: d1, dice2: d2,
         score: d1 + d2,
         isDouble: d1 === d2,
       };
       setRolledDice(prev => [...prev, roll]);
-      setLastRolledId(roll.playerId);
+      setRolling(false);
+      if (d1 === 1 && d2 === 1 && rules.relance && !relancedPlayerIds.has(playerId)) {
+        setRelancePending(true);
+      } else {
+        setRollerIndex(prev => prev + 1);
+      }
+    }, 700);
+  }
+
+  function handleRelanceRoll() {
+    if (rolling) return;
+    const playerId = players[rollerIndex].id;
+    setRelancedPlayerIds(prev => new Set(prev).add(playerId));
+    setRelancePending(false);
+    setRolling(true);
+    setTimeout(() => {
+      const d1 = rollD6(), d2 = rollD6();
+      const roll: DiceRoll = {
+        playerId,
+        dice1: d1, dice2: d2,
+        score: d1 + d2,
+        isDouble: d1 === d2,
+      };
+      setRolledDice(prev => [...prev.slice(0, -1), roll]);
       setRollerIndex(prev => prev + 1);
       setRolling(false);
     }, 700);
+  }
+
+  function skipRelance() {
+    setRelancePending(false);
+    setRollerIndex(prev => prev + 1);
   }
 
   function computeResults() {
@@ -375,11 +451,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     setRolledDice([]);
     setRollerIndex(0);
     setRolling(false);
-    setLastRolledId(null);
     setResult(null);
     setLuckyProlongations(0);
     setLooserProlongations(0);
     setProlongation(null);
+    setRelancePending(false);
+    setRelancedPlayerIds(new Set());
   }
 
   // ==============================
@@ -389,14 +466,19 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   // ---- Announce ----
   if (phase === 'announce') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle className="flex-1">Tour {round}</CardTitle>
-              <Badge variant="secondary">Annonce</Badge>
-            </div>
-          </CardHeader>
+      <>
+        {showRulesDialog && <RulesDialog rules={rules} onClose={() => setShowRulesDialog(false)} />}
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex-1">Tour {round}</CardTitle>
+                <Badge variant="secondary">Annonce</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                  ⚙️
+                </Button>
+              </div>
+            </CardHeader>
 
           <CardContent className="flex flex-col gap-4">
             {round === 1 ? (
@@ -434,88 +516,140 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               {round === 1 ? 'Commencer le tour' : "Confirmer l'annonce"}
             </Button>
           </CardFooter>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </>
     );
   }
 
   // ---- Roll ----
   if (phase === 'roll') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle className="flex-1">Tour {round}</CardTitle>
-              <Badge variant="outline" className="text-base font-bold px-3">{announcement}</Badge>
-            </div>
-          </CardHeader>
+      <>
+        {showRulesDialog && <RulesDialog rules={rules} onClose={() => setShowRulesDialog(false)} />}
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex-1">Tour {round}</CardTitle>
+                <Badge variant="outline" className="text-base font-bold px-3">{announcement}</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                  ⚙️
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {allRolled
+                  ? 'Tous les joueurs ont lancé'
+                  : relancePending
+                  ? <><span className="font-semibold text-foreground">{currentPlayer!.name}</span> — Double 1, relance disponible</>
+                  : rolling
+                  ? <><span className="font-semibold text-foreground">{currentPlayer!.name}</span> lance les dés…</>
+                  : <>Au tour de <span className="font-semibold text-foreground">{currentPlayer!.name}</span> de lancer</>
+                }
+              </p>
+            </CardHeader>
 
-          <CardContent className="flex flex-col gap-3">
-            {/* Joueurs ayant lancé */}
-            {rolledDice.length > 0 && (
+            <CardContent className="flex flex-col gap-3">
+              {/* Tableau complet — tous les joueurs */}
               <div className="flex flex-col gap-1.5">
-                {rolledDice.map(roll => {
-                  const player = players.find(p => p.id === roll.playerId)!;
-                  const isNew = roll.playerId === lastRolledId;
+                {players.map((player, index) => {
+                  const roll = rolledDice.find(r => r.playerId === player.id);
+                  const isCurrent = index === rollerIndex && !allRolled;
+                  const showAnim = isCurrent && rolling;
+                  const isRelanceRow = isCurrent && relancePending;
+
                   return (
                     <div
-                      key={roll.playerId}
-                      className={`flex items-center justify-between rounded-lg border border-border px-3 py-2 ${
-                        isNew ? 'animate-in zoom-in-95 fade-in duration-300' : ''
+                      key={player.id}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
+                        isRelanceRow
+                          ? 'border-yellow-500/40 bg-yellow-500/10'
+                          : isCurrent && !roll
+                          ? 'border-primary/40 bg-primary/5'
+                          : 'border-border'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{player.name}</span>
-                        {roll.isDouble && rules.double && <Badge variant="secondary" className="text-xs">Double</Badge>}
-                        {roll.score === 3 && rules.marchandSable && <Badge variant="secondary" className="text-xs">Marchand</Badge>}
+                      {/* Gauche : nom + badges */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isCurrent && !roll && !rolling && (
+                          <span className="text-xs text-primary shrink-0">▶</span>
+                        )}
+                        <span className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}>
+                          {player.name}
+                        </span>
+                        {roll && !showAnim && roll.isDouble && rules.double && (
+                          <Badge variant="secondary" className="text-xs shrink-0">Double</Badge>
+                        )}
+                        {roll && !showAnim && roll.score === 3 && rules.marchandSable && (
+                          <Badge variant="secondary" className="text-xs shrink-0">Marchand</Badge>
+                        )}
+                        {relancedPlayerIds.has(player.id) && (
+                          <Badge variant="outline" className="text-xs shrink-0">Relancé</Badge>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`flex gap-1 ${isNew ? 'animate-in zoom-in-50 duration-500' : ''}`}>
-                          <DiceFace value={roll.dice1} size={28} />
-                          <DiceFace value={roll.dice2} size={28} />
-                        </div>
-                        <span className="text-sm font-bold w-4 text-right">{roll.score}</span>
+
+                      {/* Droite : dés ou placeholder */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {showAnim ? (
+                          <>
+                            <div className="flex gap-1">
+                              <DiceFace value={previewD1} size={30} rolling />
+                              <DiceFace value={previewD2} size={30} rolling />
+                            </div>
+                            <span className="text-sm font-bold w-4" />
+                          </>
+                        ) : roll ? (
+                          <>
+                            <div className="flex gap-1">
+                              <DiceFace value={roll.dice1} size={30} />
+                              <DiceFace value={roll.dice2} size={30} />
+                            </div>
+                            <span className="text-sm font-bold w-4 text-right">{roll.score}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground pr-6">—</span>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
 
-            {!allRolled ? (
-              <>
-                {rolledDice.length > 0 && <Separator />}
-                <div className="flex flex-col items-center gap-4 py-2">
-                  <p className="text-sm text-muted-foreground">
-                    Au tour de <span className="font-semibold text-foreground">{currentPlayer!.name}</span>
+              {/* Bannière relance */}
+              {relancePending && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2.5 text-center">
+                  <p className="text-sm font-semibold">🎲 Double 1 — Relance disponible</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {currentPlayer!.name} peut relancer ses dés une fois
                   </p>
-                  <div className="flex gap-3">
-                    <DiceFace value={previewD1} size={64} rolling={rolling} />
-                    <DiceFace value={previewD2} size={64} rolling={rolling} />
-                  </div>
-                  <Button size="lg" className="w-full" onClick={handleRoll} disabled={rolling}>
-                    {rolling ? 'Lancer…' : 'Lancer les dés'}
+                </div>
+              )}
+
+            </CardContent>
+
+            <CardFooter>
+              {relancePending ? (
+                <div className="flex flex-col gap-2 w-full">
+                  <Button size="lg" className="w-full" onClick={handleRelanceRoll} disabled={rolling}>
+                    {rolling ? 'Lancer…' : 'Relancer les dés'}
+                  </Button>
+                  <Button size="sm" variant="outline" className="w-full" onClick={skipRelance} disabled={rolling}>
+                    Garder le 1•1
                   </Button>
                 </div>
-              </>
-            ) : (
-              <>
-                <Separator />
-                <p className="text-xs text-muted-foreground text-center">Tous les joueurs ont lancé</p>
-              </>
-            )}
-          </CardContent>
-
-          {allRolled && (
-            <CardFooter>
-              <Button className="w-full" size="lg" onClick={computeResults}>
-                Voir les résultats
-              </Button>
+              ) : allRolled ? (
+                <Button className="w-full" size="lg" onClick={computeResults}>
+                  Voir les résultats
+                </Button>
+              ) : (
+                <Button size="lg" className="w-full" onClick={handleRoll} disabled={rolling}>
+                  {rolling ? 'Lancer…' : 'Lancer les dés'}
+                </Button>
+              )}
             </CardFooter>
-          )}
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </>
     );
   }
 
@@ -523,83 +657,107 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   if (phase === 'prolongation' && prolongation) {
     const completedProlongations = prolongation.type === 'lucky' ? luckyProlongations : looserProlongations;
     const prolNumber = completedProlongations + 1;
-    // Enjeu = gorgées normales (1) + nombre de prolongations après résolution
     const drinkStake = 1 + prolNumber;
     const isLuckyType = prolongation.type === 'lucky';
 
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CardTitle className="flex-1">
-                {isLuckyType ? '🏆 Prolongation Lucky' : '💀 Prolongation Looser'}
-              </CardTitle>
-              <Badge variant="secondary">{ordinal(prolNumber)}</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {prolongation.players.map(p => p.name).join(' · ')}
-              {' — '}enjeu : <span className="font-semibold text-foreground">{drinkStake} gorgée{drinkStake > 1 ? 's' : ''}</span>
-            </p>
-            <p className="text-xs text-muted-foreground">Annonce : {announcement} · Combos suspendues</p>
-          </CardHeader>
+      <>
+        {showRulesDialog && <RulesDialog rules={rules} onClose={() => setShowRulesDialog(false)} />}
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex-1">
+                  {isLuckyType ? '🏆 Prolongation Lucky' : '💀 Prolongation Looser'}
+                </CardTitle>
+                <Badge variant="secondary">{ordinal(prolNumber)}</Badge>
+                <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                  ⚙️
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enjeu : <span className="font-semibold text-foreground">{drinkStake} gorgée{drinkStake > 1 ? 's' : ''}</span>
+                {' · '}Annonce : {announcement}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {prolAllRolled
+                  ? 'Tous les joueurs ont lancé'
+                  : prolongation.rolling
+                  ? <><span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span> lance les dés…</>
+                  : <>Au tour de <span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span> de lancer</>
+                }
+              </p>
+            </CardHeader>
 
-          <CardContent className="flex flex-col gap-3">
-            {/* Déjà lancé */}
-            {prolongation.dice.length > 0 && (
+            <CardContent className="flex flex-col gap-3">
+              {/* Tableau complet — tous les joueurs de la prolongation */}
               <div className="flex flex-col gap-1.5">
-                {prolongation.dice.map(roll => {
-                  const player = prolongation.players.find(p => p.id === roll.playerId)!;
+                {prolongation.players.map((player, index) => {
+                  const roll = prolongation.dice.find(r => r.playerId === player.id);
+                  const isCurrent = index === prolongation.rollerIndex && !prolAllRolled;
+                  const showAnim = isCurrent && prolongation.rolling;
+
                   return (
-                    <div key={roll.playerId} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-                      <span className="text-sm font-medium">{player.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <DiceFace value={roll.dice1} size={28} />
-                          <DiceFace value={roll.dice2} size={28} />
-                        </div>
-                        <span className="text-sm font-bold w-4 text-right">{roll.score}</span>
+                    <div
+                      key={player.id}
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
+                        isCurrent && !roll
+                          ? 'border-primary/40 bg-primary/5'
+                          : 'border-border'
+                      }`}
+                    >
+                      {/* Gauche : nom */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isCurrent && !roll && !prolongation.rolling && (
+                          <span className="text-xs text-primary shrink-0">▶</span>
+                        )}
+                        <span className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}>
+                          {player.name}
+                        </span>
+                      </div>
+
+                      {/* Droite : dés ou placeholder */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {showAnim ? (
+                          <>
+                            <div className="flex gap-1">
+                              <DiceFace value={previewD1} size={30} rolling />
+                              <DiceFace value={previewD2} size={30} rolling />
+                            </div>
+                            <span className="text-sm font-bold w-4" />
+                          </>
+                        ) : roll ? (
+                          <>
+                            <div className="flex gap-1">
+                              <DiceFace value={roll.dice1} size={30} />
+                              <DiceFace value={roll.dice2} size={30} />
+                            </div>
+                            <span className="text-sm font-bold w-4 text-right">{roll.score}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground pr-6">—</span>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
+            </CardContent>
 
-            {/* Joueur courant */}
-            {!prolAllRolled ? (
-              <>
-                {prolongation.dice.length > 0 && <Separator />}
-                <div className="flex flex-col items-center gap-4 py-2">
-                  <p className="text-sm text-muted-foreground">
-                    Au tour de <span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span>
-                  </p>
-                  <div className="flex gap-3">
-                    <DiceFace value={previewD1} size={64} rolling={prolongation.rolling} />
-                    <DiceFace value={previewD2} size={64} rolling={prolongation.rolling} />
-                  </div>
-                  <Button size="lg" className="w-full" onClick={handleProlongationRoll} disabled={prolongation.rolling}>
-                    {prolongation.rolling ? 'Lancer…' : 'Lancer les dés'}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Separator />
-                <p className="text-xs text-muted-foreground text-center">Tous ont lancé</p>
-              </>
-            )}
-          </CardContent>
-
-          {prolAllRolled && (
             <CardFooter>
-              <Button className="w-full" size="lg" onClick={resolveProlongation}>
-                Résoudre la prolongation
-              </Button>
+              {prolAllRolled ? (
+                <Button className="w-full" size="lg" onClick={resolveProlongation}>
+                  Résoudre la prolongation
+                </Button>
+              ) : (
+                <Button size="lg" className="w-full" onClick={handleProlongationRoll} disabled={prolongation.rolling}>
+                  {prolongation.rolling ? 'Lancer…' : 'Lancer les dés'}
+                </Button>
+              )}
             </CardFooter>
-          )}
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </>
     );
   }
 
@@ -682,12 +840,19 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   const sortedScores = result ? [...result.playerScores].sort((a, b) => a.distance - b.distance) : [];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Résultats — Tour {round}</CardTitle>
-          <p className="text-xs text-muted-foreground">Annonce : {announcement}</p>
-        </CardHeader>
+    <>
+      {showRulesDialog && <RulesDialog rules={rules} onClose={() => setShowRulesDialog(false)} />}
+      <div className="min-h-screen bg-background flex flex-col items-center justify-start px-4 py-8">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle className="flex-1">Résultats — Tour {round}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                ⚙️
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Annonce : {announcement}</p>
+          </CardHeader>
 
         <CardContent className="flex flex-col gap-4">
           {/* Scores */}
@@ -779,7 +944,8 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
             Fin de partie
           </Button>
         </CardFooter>
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </>
   );
 }

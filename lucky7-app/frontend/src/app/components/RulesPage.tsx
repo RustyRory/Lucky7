@@ -101,7 +101,12 @@ export default function RulesPage({ onBack }: RulesPageProps) {
               <Rule
                 emoji="🎲"
                 title="Double"
-                desc="Deux dés identiques → le joueur distribue autant de gorgées que la valeur du dé. Double 1 (score 2) : distribue 1 gorgée ou fait relancer le joueur de son choix."
+                desc="Deux dés identiques → le joueur distribue autant de gorgées que la valeur du dé."
+              />
+              <Rule
+                emoji="🔄"
+                title="Relance (Double 1)"
+                desc="Si la règle est activée : un joueur qui fait 1•1 peut relancer ses deux dés une fois. Sans cette règle, Double 1 → distribue 1 gorgée au choix."
               />
               <Rule
                 emoji="🌙"
