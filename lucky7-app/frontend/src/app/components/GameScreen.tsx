@@ -831,7 +831,9 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     const completedProlongations =
       prolongation.type === 'lucky' ? luckyProlongations : looserProlongations;
     const prolNumber = completedProlongations + 1;
-    const drinkStake = 1 + prolNumber;
+    const accumulatedBonus =
+      prolongation.type === 'lucky' ? luckyProlongBonus : looserProlongBonus;
+    const drinkStake = 1 + accumulatedBonus + (prolongation.players.length - 1);
     const isLuckyType = prolongation.type === 'lucky';
 
     return (
