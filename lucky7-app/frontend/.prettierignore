@@ -5,3 +5,4 @@ node_modules/
 public/
 *.min.js
 package-lock.json
+next-env.d.ts

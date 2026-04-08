@@ -100,10 +100,7 @@ function RulesConfigDialog({
               Règles optionnelles
             </p>
             {TOGGLEABLE_RULES.map(rule => (
-              <label
-                key={rule.key}
-                className="flex items-start gap-3 cursor-pointer select-none"
-              >
+              <label key={rule.key} className="flex items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={rules[rule.key]}
@@ -141,7 +138,9 @@ function RulesConfigDialog({
               <label className="flex items-start gap-3 opacity-60 cursor-not-allowed select-none">
                 <input type="checkbox" disabled className="mt-0.5 shrink-0 w-4 h-4" />
                 <div>
-                  <p className="text-sm font-medium leading-tight text-destructive">{HARD_RULE.label}</p>
+                  <p className="text-sm font-medium leading-tight text-destructive">
+                    {HARD_RULE.label}
+                  </p>
                   <p className="text-xs text-destructive/70 mt-0.5">{HARD_RULE.desc}</p>
                 </div>
               </label>
@@ -186,20 +185,20 @@ export default function SingleDeviceLobby({ onBack }: SingleDeviceLobbyProps) {
       setError('Le pseudo doit faire entre 2 et 20 caractères.');
       return;
     }
-    if (players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+    if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
       setError('Ce pseudo est déjà dans la partie.');
       return;
     }
-    setPlayers((prev) => [...prev, { id: generateId(), name }]);
+    setPlayers(prev => [...prev, { id: generateId(), name }]);
     setInput('');
   }
 
   function removePlayer(id: string) {
-    setPlayers((prev) => prev.filter((p) => p.id !== id));
+    setPlayers(prev => prev.filter(p => p.id !== id));
   }
 
   function toggleRule(key: keyof RulesConfig) {
-    setRules((prev) => ({ ...prev, [key]: !prev[key] }));
+    setRules(prev => ({ ...prev, [key]: !prev[key] }));
   }
 
   const canStart = players.length >= 2;
@@ -233,7 +232,7 @@ export default function SingleDeviceLobby({ onBack }: SingleDeviceLobbyProps) {
                 <Input
                   placeholder="Pseudo du joueur…"
                   value={input}
-                  onChange={(e) => {
+                  onChange={e => {
                     setInput(e.target.value);
                     setError('');
                   }}
@@ -259,7 +258,7 @@ export default function SingleDeviceLobby({ onBack }: SingleDeviceLobbyProps) {
                 </p>
               ) : (
                 <ul className="flex flex-col gap-1.5">
-                  {players.map((player) => (
+                  {players.map(player => (
                     <li
                       key={player.id}
                       className="flex items-center justify-between rounded-lg border border-border px-3 py-2"

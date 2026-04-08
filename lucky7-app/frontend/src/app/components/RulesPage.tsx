@@ -113,11 +113,7 @@ export default function RulesPage({ onBack }: RulesPageProps) {
                 title="Marchand de sable"
                 desc="Score de 3 (1+2) → immunité totale contre les gorgées pour ce tour."
               />
-              <Rule
-                emoji="7️⃣"
-                title="Jeton"
-                desc="Score de 7 → le joueur boit 1 gorgée."
-              />
+              <Rule emoji="7️⃣" title="Jeton" desc="Score de 7 → le joueur boit 1 gorgée." />
               <Rule
                 emoji="🎰"
                 title="Jackpot"

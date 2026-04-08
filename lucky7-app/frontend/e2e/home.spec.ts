@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Page d\'accueil', () => {
+test.describe("Page d'accueil", () => {
   test('affiche le titre et les boutons principaux', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Lucky7' })).toBeVisible();
@@ -24,7 +24,7 @@ test.describe('Règles du jeu', () => {
     await expect(page.getByText('Règles spéciales')).toBeVisible();
   });
 
-  test('le bouton retour ramène à l\'accueil', async ({ page }) => {
+  test("le bouton retour ramène à l'accueil", async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Règles du jeu' }).click();
     await page.getByRole('button', { name: '←' }).first().click();
@@ -33,7 +33,7 @@ test.describe('Règles du jeu', () => {
 });
 
 test.describe('Lobby — 1 appareil', () => {
-  test('affiche le formulaire d\'ajout de joueurs', async ({ page }) => {
+  test("affiche le formulaire d'ajout de joueurs", async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '1 appareil' }).click();
     await expect(page.getByPlaceholder('Pseudo du joueur…')).toBeVisible();

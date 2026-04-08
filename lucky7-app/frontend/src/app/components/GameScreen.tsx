@@ -13,14 +13,47 @@ import { Separator } from '@/components/ui/separator';
 // Positions des points pour chaque valeur de dé (grille 3×3, coords en %)
 const DOT_POSITIONS: Record<number, [number, number][]> = {
   1: [[50, 50]],
-  2: [[25, 25], [75, 75]],
-  3: [[25, 25], [50, 50], [75, 75]],
-  4: [[25, 25], [75, 25], [25, 75], [75, 75]],
-  5: [[25, 25], [75, 25], [50, 50], [25, 75], [75, 75]],
-  6: [[25, 25], [75, 25], [25, 50], [75, 50], [25, 75], [75, 75]],
+  2: [
+    [25, 25],
+    [75, 75],
+  ],
+  3: [
+    [25, 25],
+    [50, 50],
+    [75, 75],
+  ],
+  4: [
+    [25, 25],
+    [75, 25],
+    [25, 75],
+    [75, 75],
+  ],
+  5: [
+    [25, 25],
+    [75, 25],
+    [50, 50],
+    [25, 75],
+    [75, 75],
+  ],
+  6: [
+    [25, 25],
+    [75, 25],
+    [25, 50],
+    [75, 50],
+    [25, 75],
+    [75, 75],
+  ],
 };
 
-function DiceFace({ value, size = 56, rolling = false }: { value: number; size?: number; rolling?: boolean }) {
+function DiceFace({
+  value,
+  size = 56,
+  rolling = false,
+}: {
+  value: number;
+  size?: number;
+  rolling?: boolean;
+}) {
   const dots = DOT_POSITIONS[value] ?? [];
   const r = 9;
   return (
@@ -32,8 +65,15 @@ function DiceFace({ value, size = 56, rolling = false }: { value: number; size?:
       style={rolling ? { animationDuration: '200ms' } : undefined}
     >
       <rect
-        x="4" y="4" width="92" height="92" rx="18" ry="18"
-        fill="white" stroke="#d1d5db" strokeWidth="4"
+        x="4"
+        y="4"
+        width="92"
+        height="92"
+        rx="18"
+        ry="18"
+        fill="white"
+        stroke="#d1d5db"
+        strokeWidth="4"
       />
       {dots.map(([cx, cy], i) => (
         <circle key={i} cx={cx} cy={cy} r={r} fill="#1f2937" />
@@ -73,11 +113,17 @@ export interface RulesConfig {
 function RuleItem({ label, active, desc }: { label: string; active: boolean; desc: string }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className={`text-sm shrink-0 mt-0.5 ${active ? 'text-green-500' : 'text-muted-foreground'}`}>
+      <span
+        className={`text-sm shrink-0 mt-0.5 ${active ? 'text-green-500' : 'text-muted-foreground'}`}
+      >
         {active ? '✓' : '✗'}
       </span>
       <div>
-        <p className={`text-sm font-medium leading-tight ${!active ? 'text-muted-foreground' : ''}`}>{label}</p>
+        <p
+          className={`text-sm font-medium leading-tight ${!active ? 'text-muted-foreground' : ''}`}
+        >
+          {label}
+        </p>
         <p className="text-xs text-muted-foreground">{desc}</p>
       </div>
     </div>
@@ -96,12 +142,29 @@ function RulesDialog({ rules, onClose }: { rules: RulesConfig; onClose: () => vo
       >
         <div className="flex items-center justify-between mb-4">
           <p className="font-semibold">Paramètres de la partie</p>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg leading-none">✕</button>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground text-lg leading-none"
+          >
+            ✕
+          </button>
         </div>
         <div className="flex flex-col gap-3">
-          <RuleItem label="Double" active={rules.double} desc="Deux dés identiques → distribue autant de gorgées que la valeur" />
-          <RuleItem label="Relance (Double 1)" active={rules.relance} desc="Double 1 → peut relancer ses dés une fois" />
-          <RuleItem label="Marchand de sable" active={rules.marchandSable} desc="Score de 3 → immunité ce tour" />
+          <RuleItem
+            label="Double"
+            active={rules.double}
+            desc="Deux dés identiques → distribue autant de gorgées que la valeur"
+          />
+          <RuleItem
+            label="Relance (Double 1)"
+            active={rules.relance}
+            desc="Double 1 → peut relancer ses dés une fois"
+          />
+          <RuleItem
+            label="Marchand de sable"
+            active={rules.marchandSable}
+            desc="Score de 3 → immunité ce tour"
+          />
         </div>
       </div>
     </div>
@@ -148,7 +211,9 @@ type Phase = 'announce' | 'roll' | 'results' | 'prolongation' | 'manage-players'
 
 // ---- Helpers ----
 
-function rollD6(): number { return Math.ceil(Math.random() * 6); }
+function rollD6(): number {
+  return Math.ceil(Math.random() * 6);
+}
 
 function ordinal(n: number): string {
   return n === 1 ? '1ère' : `${n}ème`;
@@ -220,11 +285,13 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     if (rolling || allRolled || relancePending) return;
     setRolling(true);
     setTimeout(() => {
-      const d1 = rollD6(), d2 = rollD6();
+      const d1 = rollD6(),
+        d2 = rollD6();
       const playerId = players[rollerIndex].id;
       const roll: DiceRoll = {
         playerId,
-        dice1: d1, dice2: d2,
+        dice1: d1,
+        dice2: d2,
         score: d1 + d2,
         isDouble: d1 === d2,
       };
@@ -245,10 +312,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     setRelancePending(false);
     setRolling(true);
     setTimeout(() => {
-      const d1 = rollD6(), d2 = rollD6();
+      const d1 = rollD6(),
+        d2 = rollD6();
       const roll: DiceRoll = {
         playerId,
-        dice1: d1, dice2: d2,
+        dice1: d1,
+        dice2: d2,
         score: d1 + d2,
         isDouble: d1 === d2,
       };
@@ -268,7 +337,8 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       const player = players.find(p => p.id === roll.playerId)!;
       return {
         player,
-        dice1: roll.dice1, dice2: roll.dice2,
+        dice1: roll.dice1,
+        dice2: roll.dice2,
         score: roll.score,
         distance: Math.abs(roll.score - announcement),
         isDouble: roll.isDouble,
@@ -297,24 +367,30 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
     ? prolongation.rollerIndex >= prolongation.players.length
     : false;
 
-  const prolCurrentPlayer = prolongation && !prolAllRolled
-    ? prolongation.players[prolongation.rollerIndex]
-    : null;
+  const prolCurrentPlayer =
+    prolongation && !prolAllRolled ? prolongation.players[prolongation.rollerIndex] : null;
 
   function handleProlongationRoll() {
     if (!prolongation || prolongation.rolling || prolAllRolled) return;
-    setProlongation(prev => prev ? { ...prev, rolling: true } : prev);
+    setProlongation(prev => (prev ? { ...prev, rolling: true } : prev));
     setTimeout(() => {
       setProlongation(prev => {
         if (!prev) return prev;
-        const d1 = rollD6(), d2 = rollD6();
+        const d1 = rollD6(),
+          d2 = rollD6();
         const roll: DiceRoll = {
           playerId: prev.players[prev.rollerIndex].id,
-          dice1: d1, dice2: d2,
+          dice1: d1,
+          dice2: d2,
           score: d1 + d2,
           isDouble: d1 === d2,
         };
-        return { ...prev, dice: [...prev.dice, roll], rollerIndex: prev.rollerIndex + 1, rolling: false };
+        return {
+          ...prev,
+          dice: [...prev.dice, roll],
+          rollerIndex: prev.rollerIndex + 1,
+          rolling: false,
+        };
       });
     }, 700);
   }
@@ -333,12 +409,18 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       const winners = scores.filter(s => s.distance === minDist).map(s => s.player);
       setLuckyProlongations(prev => prev + 1);
       if (winners.length === 1) {
-        setResult(prev => prev ? { ...prev, luckyPlayers: winners } : prev);
+        setResult(prev => (prev ? { ...prev, luckyPlayers: winners } : prev));
         setProlongation(null);
         setPhase('results');
       } else {
         // Encore une égalité — relancer avec les mêmes joueurs
-        setProlongation({ type: 'lucky', players: winners, dice: [], rollerIndex: 0, rolling: false });
+        setProlongation({
+          type: 'lucky',
+          players: winners,
+          dice: [],
+          rollerIndex: 0,
+          rolling: false,
+        });
         // reste en phase prolongation
       }
     } else {
@@ -346,11 +428,17 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       const losers = scores.filter(s => s.distance === maxDist).map(s => s.player);
       setLooserProlongations(prev => prev + 1);
       if (losers.length === 1) {
-        setResult(prev => prev ? { ...prev, looserPlayers: losers } : prev);
+        setResult(prev => (prev ? { ...prev, looserPlayers: losers } : prev));
         setProlongation(null);
         setPhase('results');
       } else {
-        setProlongation({ type: 'looser', players: losers, dice: [], rollerIndex: 0, rolling: false });
+        setProlongation({
+          type: 'looser',
+          players: losers,
+          dice: [],
+          rollerIndex: 0,
+          rolling: false,
+        });
       }
     }
   }
@@ -369,38 +457,52 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
       const ls = playerScores.find(s => s.player.id === luckyPlayers[0].id)!;
       const base = ls.score === ann ? 2 : 1;
       const drinks = base + luckyProlongations;
-      const extra = luckyProlongations > 0
-        ? ` (+${luckyProlongations} prolongation${luckyProlongations > 1 ? 's' : ''})`
-        : '';
-      msgs.push(`🏆 ${luckyPlayers[0].name} distribue ${drinks} gorgée${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}${extra}`);
+      const extra =
+        luckyProlongations > 0
+          ? ` (+${luckyProlongations} prolongation${luckyProlongations > 1 ? 's' : ''})`
+          : '';
+      msgs.push(
+        `🏆 ${luckyPlayers[0].name} distribue ${drinks} gorgée${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}${extra}`
+      );
     }
 
     // Looser — toujours actif, +1 gorgée par prolongation
     if (looserPlayers.length === 1) {
       const drinks = 1 + looserProlongations;
-      const extra = looserProlongations > 0
-        ? ` (+${looserProlongations} prolongation${looserProlongations > 1 ? 's' : ''})`
-        : '';
-      msgs.push(`💀 ${looserPlayers[0].name} boit ${drinks} gorgée${drinks > 1 ? 's' : ''}${extra}`);
+      const extra =
+        looserProlongations > 0
+          ? ` (+${looserProlongations} prolongation${looserProlongations > 1 ? 's' : ''})`
+          : '';
+      msgs.push(
+        `💀 ${looserPlayers[0].name} boit ${drinks} gorgée${drinks > 1 ? 's' : ''}${extra}`
+      );
     }
 
     // Double — optionnel, suspendu pendant les prolongations (déjà géré : on affiche à la fin)
     if (rules.double) {
-      playerScores.filter(s => s.isDouble).forEach(s => {
-        const diceVal = s.dice1;
-        if (diceVal === 1) {
-          msgs.push(`🎲 ${s.player.name} — Double 1 : distribue 1 gorgée ou fait relancer un joueur`);
-        } else {
-          msgs.push(`🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} gorgée${diceVal > 1 ? 's' : ''}`);
-        }
-      });
+      playerScores
+        .filter(s => s.isDouble)
+        .forEach(s => {
+          const diceVal = s.dice1;
+          if (diceVal === 1) {
+            msgs.push(
+              `🎲 ${s.player.name} — Double 1 : distribue 1 gorgée ou fait relancer un joueur`
+            );
+          } else {
+            msgs.push(
+              `🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} gorgée${diceVal > 1 ? 's' : ''}`
+            );
+          }
+        });
     }
 
     // Marchand de sable — optionnel
     if (rules.marchandSable) {
-      playerScores.filter(s => s.score === 3).forEach(s => {
-        msgs.push(`🌙 ${s.player.name} — Marchand de sable : immunité !`);
-      });
+      playerScores
+        .filter(s => s.score === 3)
+        .forEach(s => {
+          msgs.push(`🌙 ${s.player.name} — Marchand de sable : immunité !`);
+        });
     }
 
     return msgs;
@@ -474,48 +576,61 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               <div className="flex items-center gap-2">
                 <CardTitle className="flex-1">Tour {round}</CardTitle>
                 <Badge variant="secondary">Annonce</Badge>
-                <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRulesDialog(true)}
+                  className="px-2 text-muted-foreground"
+                  aria-label="Paramètres"
+                >
                   ⚙️
                 </Button>
               </div>
             </CardHeader>
 
-          <CardContent className="flex flex-col gap-4">
-            {round === 1 ? (
-              <div className="text-center py-2">
-                <p className="text-muted-foreground text-sm mb-3">Premier tour — annonce automatique</p>
-                <p className="text-6xl font-bold">12</p>
-                <p className="text-sm text-muted-foreground mt-1">"le plus"</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-center">
-                  <span className="font-semibold">{luckyPlayer?.name ?? 'Le Lucky'}</span> annonce
-                  le score cible (2 – 12)
-                </p>
-                <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground">
-                  Rappel : dire{' '}
-                  <span className="font-semibold text-foreground">"le moins"</span> pour 2 et{' '}
-                  <span className="font-semibold text-foreground">"le plus"</span> pour 12
+            <CardContent className="flex flex-col gap-4">
+              {round === 1 ? (
+                <div className="text-center py-2">
+                  <p className="text-muted-foreground text-sm mb-3">
+                    Premier tour — annonce automatique
+                  </p>
+                  <p className="text-6xl font-bold">12</p>
+                  <p className="text-sm text-muted-foreground mt-1">"le plus"</p>
                 </div>
-                <Input
-                  type="number"
-                  min={2}
-                  max={12}
-                  placeholder="Annonce (2 – 12)"
-                  value={announcementInput}
-                  onChange={e => { setAnnouncementInput(e.target.value); setAnnouncementError(''); }}
-                />
-                {announcementError && <p className="text-destructive text-xs">{announcementError}</p>}
-              </div>
-            )}
-          </CardContent>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-center">
+                    <span className="font-semibold">{luckyPlayer?.name ?? 'Le Lucky'}</span> annonce
+                    le score cible (2 – 12)
+                  </p>
+                  <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground">
+                    Rappel : dire <span className="font-semibold text-foreground">"le moins"</span>{' '}
+                    pour 2 et <span className="font-semibold text-foreground">"le plus"</span> pour
+                    12
+                  </div>
+                  <Input
+                    type="number"
+                    min={2}
+                    max={12}
+                    placeholder="Annonce (2 – 12)"
+                    value={announcementInput}
+                    onChange={e => {
+                      setAnnouncementInput(e.target.value);
+                      setAnnouncementError('');
+                    }}
+                  />
+                  {announcementError && (
+                    <p className="text-destructive text-xs">{announcementError}</p>
+                  )}
+                </div>
+              )}
+            </CardContent>
 
-          <CardFooter>
-            <Button className="w-full" size="lg" onClick={confirmAnnouncement}>
-              {round === 1 ? 'Commencer le tour' : "Confirmer l'annonce"}
-            </Button>
-          </CardFooter>
+            <CardFooter>
+              <Button className="w-full" size="lg" onClick={confirmAnnouncement}>
+                {round === 1 ? 'Commencer le tour' : "Confirmer l'annonce"}
+              </Button>
+            </CardFooter>
           </Card>
         </div>
       </>
@@ -532,20 +647,39 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
             <CardHeader>
               <div className="flex items-center gap-2">
                 <CardTitle className="flex-1">Tour {round}</CardTitle>
-                <Badge variant="outline" className="text-base font-bold px-3">{announcement}</Badge>
-                <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                <Badge variant="outline" className="text-base font-bold px-3">
+                  {announcement}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRulesDialog(true)}
+                  className="px-2 text-muted-foreground"
+                  aria-label="Paramètres"
+                >
                   ⚙️
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                {allRolled
-                  ? 'Tous les joueurs ont lancé'
-                  : relancePending
-                  ? <><span className="font-semibold text-foreground">{currentPlayer!.name}</span> — Double 1, relance disponible</>
-                  : rolling
-                  ? <><span className="font-semibold text-foreground">{currentPlayer!.name}</span> lance les dés…</>
-                  : <>Au tour de <span className="font-semibold text-foreground">{currentPlayer!.name}</span> de lancer</>
-                }
+                {allRolled ? (
+                  'Tous les joueurs ont lancé'
+                ) : relancePending ? (
+                  <>
+                    <span className="font-semibold text-foreground">{currentPlayer!.name}</span> —
+                    Double 1, relance disponible
+                  </>
+                ) : rolling ? (
+                  <>
+                    <span className="font-semibold text-foreground">{currentPlayer!.name}</span>{' '}
+                    lance les dés…
+                  </>
+                ) : (
+                  <>
+                    Au tour de{' '}
+                    <span className="font-semibold text-foreground">{currentPlayer!.name}</span> de
+                    lancer
+                  </>
+                )}
               </p>
             </CardHeader>
 
@@ -565,8 +699,8 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         isRelanceRow
                           ? 'border-yellow-500/40 bg-yellow-500/10'
                           : isCurrent && !roll
-                          ? 'border-primary/40 bg-primary/5'
-                          : 'border-border'
+                            ? 'border-primary/40 bg-primary/5'
+                            : 'border-border'
                       }`}
                     >
                       {/* Gauche : nom + badges */}
@@ -574,17 +708,25 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         {isCurrent && !roll && !rolling && (
                           <span className="text-xs text-primary shrink-0">▶</span>
                         )}
-                        <span className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}>
+                        <span
+                          className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}
+                        >
                           {player.name}
                         </span>
                         {roll && !showAnim && roll.isDouble && rules.double && (
-                          <Badge variant="secondary" className="text-xs shrink-0">Double</Badge>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            Double
+                          </Badge>
                         )}
                         {roll && !showAnim && roll.score === 3 && rules.marchandSable && (
-                          <Badge variant="secondary" className="text-xs shrink-0">Marchand</Badge>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            Marchand
+                          </Badge>
                         )}
                         {relancedPlayerIds.has(player.id) && (
-                          <Badge variant="outline" className="text-xs shrink-0">Relancé</Badge>
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            Relancé
+                          </Badge>
                         )}
                       </div>
 
@@ -624,16 +766,26 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                   </p>
                 </div>
               )}
-
             </CardContent>
 
             <CardFooter>
               {relancePending ? (
                 <div className="flex flex-col gap-2 w-full">
-                  <Button size="lg" className="w-full" onClick={handleRelanceRoll} disabled={rolling}>
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={handleRelanceRoll}
+                    disabled={rolling}
+                  >
                     {rolling ? 'Lancer…' : 'Relancer les dés'}
                   </Button>
-                  <Button size="sm" variant="outline" className="w-full" onClick={skipRelance} disabled={rolling}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={skipRelance}
+                    disabled={rolling}
+                  >
                     Garder le 1•1
                   </Button>
                 </div>
@@ -655,7 +807,8 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
 
   // ---- Prolongation ----
   if (phase === 'prolongation' && prolongation) {
-    const completedProlongations = prolongation.type === 'lucky' ? luckyProlongations : looserProlongations;
+    const completedProlongations =
+      prolongation.type === 'lucky' ? luckyProlongations : looserProlongations;
     const prolNumber = completedProlongations + 1;
     const drinkStake = 1 + prolNumber;
     const isLuckyType = prolongation.type === 'lucky';
@@ -671,21 +824,38 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                   {isLuckyType ? '🏆 Prolongation Lucky' : '💀 Prolongation Looser'}
                 </CardTitle>
                 <Badge variant="secondary">{ordinal(prolNumber)}</Badge>
-                <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRulesDialog(true)}
+                  className="px-2 text-muted-foreground"
+                  aria-label="Paramètres"
+                >
                   ⚙️
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Enjeu : <span className="font-semibold text-foreground">{drinkStake} gorgée{drinkStake > 1 ? 's' : ''}</span>
+                Enjeu :{' '}
+                <span className="font-semibold text-foreground">
+                  {drinkStake} gorgée{drinkStake > 1 ? 's' : ''}
+                </span>
                 {' · '}Annonce : {announcement}
               </p>
               <p className="text-sm text-muted-foreground">
-                {prolAllRolled
-                  ? 'Tous les joueurs ont lancé'
-                  : prolongation.rolling
-                  ? <><span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span> lance les dés…</>
-                  : <>Au tour de <span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span> de lancer</>
-                }
+                {prolAllRolled ? (
+                  'Tous les joueurs ont lancé'
+                ) : prolongation.rolling ? (
+                  <>
+                    <span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span>{' '}
+                    lance les dés…
+                  </>
+                ) : (
+                  <>
+                    Au tour de{' '}
+                    <span className="font-semibold text-foreground">{prolCurrentPlayer!.name}</span>{' '}
+                    de lancer
+                  </>
+                )}
               </p>
             </CardHeader>
 
@@ -701,9 +871,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                     <div
                       key={player.id}
                       className={`flex items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
-                        isCurrent && !roll
-                          ? 'border-primary/40 bg-primary/5'
-                          : 'border-border'
+                        isCurrent && !roll ? 'border-primary/40 bg-primary/5' : 'border-border'
                       }`}
                     >
                       {/* Gauche : nom */}
@@ -711,7 +879,9 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         {isCurrent && !roll && !prolongation.rolling && (
                           <span className="text-xs text-primary shrink-0">▶</span>
                         )}
-                        <span className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}>
+                        <span
+                          className={`text-sm font-medium truncate ${!roll && !isCurrent ? 'text-muted-foreground' : ''}`}
+                        >
                           {player.name}
                         </span>
                       </div>
@@ -750,7 +920,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                   Résoudre la prolongation
                 </Button>
               ) : (
-                <Button size="lg" className="w-full" onClick={handleProlongationRoll} disabled={prolongation.rolling}>
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleProlongationRoll}
+                  disabled={prolongation.rolling}
+                >
                   {prolongation.rolling ? 'Lancer…' : 'Lancer les dés'}
                 </Button>
               )}
@@ -769,7 +944,14 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
         <Card className="w-full max-w-sm">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => setPhase('results')} className="px-2">←</Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPhase('results')}
+                className="px-2"
+              >
+                ←
+              </Button>
               <CardTitle className="flex-1">Gérer les joueurs</CardTitle>
               <Badge variant="secondary">{players.length}</Badge>
             </div>
@@ -782,7 +964,10 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                 <Input
                   placeholder="Nouveau joueur…"
                   value={manageInput}
-                  onChange={e => { setManageInput(e.target.value); setManageError(''); }}
+                  onChange={e => {
+                    setManageInput(e.target.value);
+                    setManageError('');
+                  }}
                   maxLength={20}
                 />
                 <Button type="submit" disabled={manageInput.trim().length < 2}>
@@ -797,11 +982,16 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
             {/* Liste */}
             <ul className="flex flex-col gap-1.5">
               {players.map(player => (
-                <li key={player.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                <li
+                  key={player.id}
+                  className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+                >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{player.name}</span>
                     {luckyPlayer?.id === player.id && (
-                      <Badge variant="secondary" className="text-xs">Lucky</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        Lucky
+                      </Badge>
                     )}
                   </div>
                   <Button
@@ -820,7 +1010,13 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           </CardContent>
 
           <CardFooter className="flex flex-col gap-2">
-            <Button className="w-full" size="lg" onClick={() => { setPhase('results'); }}>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                setPhase('results');
+              }}
+            >
               Retour aux résultats
             </Button>
             <Button variant="ghost" className="w-full text-muted-foreground" onClick={onEnd}>
@@ -837,7 +1033,9 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   const looserTied = (result?.looserPlayers.length ?? 0) > 1;
   const allResolved = !luckyTied && !looserTied;
   const drinkMessages = getDrinkMessages();
-  const sortedScores = result ? [...result.playerScores].sort((a, b) => a.distance - b.distance) : [];
+  const sortedScores = result
+    ? [...result.playerScores].sort((a, b) => a.distance - b.distance)
+    : [];
 
   return (
     <>
@@ -847,103 +1045,138 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           <CardHeader>
             <div className="flex items-center gap-2">
               <CardTitle className="flex-1">Résultats — Tour {round}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setShowRulesDialog(true)} className="px-2 text-muted-foreground" aria-label="Paramètres">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowRulesDialog(true)}
+                className="px-2 text-muted-foreground"
+                aria-label="Paramètres"
+              >
                 ⚙️
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">Annonce : {announcement}</p>
           </CardHeader>
 
-        <CardContent className="flex flex-col gap-4">
-          {/* Scores */}
-          <div className="flex flex-col gap-1.5">
-            {sortedScores.map(s => {
-              const isLucky = result!.luckyPlayers.some(p => p.id === s.player.id);
-              const isLooser = result!.looserPlayers.some(p => p.id === s.player.id);
-              return (
-                <div
-                  key={s.player.id}
-                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
-                    isLucky && !isLooser ? 'bg-yellow-500/10 border-yellow-500/40' :
-                    isLooser && !isLucky ? 'bg-destructive/10 border-destructive/30' :
-                    'border-border'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {isLucky && <span>🏆</span>}
-                    {isLooser && !isLucky && <span>💀</span>}
-                    <span className="text-sm font-medium">{s.player.name}</span>
-                    {s.isDouble && rules.double && <Badge variant="secondary" className="text-xs">Double</Badge>}
-                    {s.score === 3 && rules.marchandSable && <Badge variant="secondary" className="text-xs">Marchand</Badge>}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex gap-1">
-                      <DiceFace value={s.dice1} size={28} />
-                      <DiceFace value={s.dice2} size={28} />
+          <CardContent className="flex flex-col gap-4">
+            {/* Scores */}
+            <div className="flex flex-col gap-1.5">
+              {sortedScores.map(s => {
+                const isLucky = result!.luckyPlayers.some(p => p.id === s.player.id);
+                const isLooser = result!.looserPlayers.some(p => p.id === s.player.id);
+                return (
+                  <div
+                    key={s.player.id}
+                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
+                      isLucky && !isLooser
+                        ? 'bg-yellow-500/10 border-yellow-500/40'
+                        : isLooser && !isLucky
+                          ? 'bg-destructive/10 border-destructive/30'
+                          : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isLucky && <span>🏆</span>}
+                      {isLooser && !isLucky && <span>💀</span>}
+                      <span className="text-sm font-medium">{s.player.name}</span>
+                      {s.isDouble && rules.double && (
+                        <Badge variant="secondary" className="text-xs">
+                          Double
+                        </Badge>
+                      )}
+                      {s.score === 3 && rules.marchandSable && (
+                        <Badge variant="secondary" className="text-xs">
+                          Marchand
+                        </Badge>
+                      )}
                     </div>
-                    <span className="text-sm font-bold">{s.score}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {s.distance === 0 ? '(exact !)' : `(±${s.distance})`}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex gap-1">
+                        <DiceFace value={s.dice1} size={28} />
+                        <DiceFace value={s.dice2} size={28} />
+                      </div>
+                      <span className="text-sm font-bold">{s.score}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {s.distance === 0 ? '(exact !)' : `(±${s.distance})`}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Prolongation Lucky */}
-          {luckyTied && (
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-3 flex flex-col gap-2">
-              <p className="text-sm font-semibold">🏆 Égalité Lucky</p>
-              <p className="text-xs text-muted-foreground">
-                {result!.luckyPlayers.map(p => p.name).join(', ')} — même distance
-              </p>
-              <Button size="sm" className="w-full" onClick={() => startProlongation('lucky', result!.luckyPlayers)}>
-                Lancer la prolongation
-              </Button>
+                );
+              })}
             </div>
-          )}
 
-          {/* Prolongation Looser — seulement après résolution du Lucky */}
-          {looserTied && !luckyTied && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-3 flex flex-col gap-2">
-              <p className="text-sm font-semibold">💀 Égalité Looser</p>
-              <p className="text-xs text-muted-foreground">
-                {result!.looserPlayers.map(p => p.name).join(', ')} — même distance
-              </p>
-              <Button size="sm" variant="destructive" className="w-full" onClick={() => startProlongation('looser', result!.looserPlayers)}>
-                Lancer la prolongation
-              </Button>
-            </div>
-          )}
-
-          {/* Gorgées — uniquement quand tout est résolu */}
-          {allResolved && drinkMessages.length > 0 && (
-            <>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium">Gorgées</p>
-                {drinkMessages.map((msg, i) => (
-                  <p key={i} className="text-sm">{msg}</p>
-                ))}
+            {/* Prolongation Lucky */}
+            {luckyTied && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-3 flex flex-col gap-2">
+                <p className="text-sm font-semibold">🏆 Égalité Lucky</p>
+                <p className="text-xs text-muted-foreground">
+                  {result!.luckyPlayers.map(p => p.name).join(', ')} — même distance
+                </p>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => startProlongation('lucky', result!.luckyPlayers)}
+                >
+                  Lancer la prolongation
+                </Button>
               </div>
-            </>
-          )}
-        </CardContent>
+            )}
 
-        <CardFooter className="flex flex-col gap-2">
-          {allResolved && (
-            <Button className="w-full" size="lg" onClick={nextRound}>
-              Nouveau tour
+            {/* Prolongation Looser — seulement après résolution du Lucky */}
+            {looserTied && !luckyTied && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-3 flex flex-col gap-2">
+                <p className="text-sm font-semibold">💀 Égalité Looser</p>
+                <p className="text-xs text-muted-foreground">
+                  {result!.looserPlayers.map(p => p.name).join(', ')} — même distance
+                </p>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => startProlongation('looser', result!.looserPlayers)}
+                >
+                  Lancer la prolongation
+                </Button>
+              </div>
+            )}
+
+            {/* Gorgées — uniquement quand tout est résolu */}
+            {allResolved && drinkMessages.length > 0 && (
+              <>
+                <Separator />
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">Gorgées</p>
+                  {drinkMessages.map((msg, i) => (
+                    <p key={i} className="text-sm">
+                      {msg}
+                    </p>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+
+          <CardFooter className="flex flex-col gap-2">
+            {allResolved && (
+              <Button className="w-full" size="lg" onClick={nextRound}>
+                Nouveau tour
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setManageError('');
+                setManageInput('');
+                setPhase('manage-players');
+              }}
+            >
+              Gérer les joueurs
             </Button>
-          )}
-          <Button variant="outline" className="w-full" onClick={() => { setManageError(''); setManageInput(''); setPhase('manage-players'); }}>
-            Gérer les joueurs
-          </Button>
-          <Button variant="ghost" className="w-full text-muted-foreground" onClick={onEnd}>
-            Fin de partie
-          </Button>
-        </CardFooter>
+            <Button variant="ghost" className="w-full text-muted-foreground" onClick={onEnd}>
+              Fin de partie
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     </>

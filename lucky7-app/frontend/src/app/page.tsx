@@ -21,9 +21,7 @@ export default function Home() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">Lucky7</CardTitle>
-          <CardDescription>
-            Lance les dés, sois le plus proche de l'annonce !
-          </CardDescription>
+          <CardDescription>Lance les dés, sois le plus proche de l'annonce !</CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3">

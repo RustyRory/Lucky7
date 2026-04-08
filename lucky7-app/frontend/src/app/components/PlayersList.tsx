@@ -29,7 +29,7 @@ export default function PlayersList({ currentPseudo, players }: PlayersListProps
         </div>
 
         <ul className="flex flex-col gap-2">
-          {players.map((player) => (
+          {players.map(player => (
             <li
               key={player.id}
               className="flex items-center gap-3 bg-zinc-800 rounded-xl px-4 py-3"

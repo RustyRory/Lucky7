@@ -12,7 +12,7 @@ describe('RulesPage', () => {
   it('affiche les sections principales', () => {
     render(<RulesPage onBack={vi.fn()} />);
     expect(screen.getByText('Préparation')).toBeInTheDocument();
-    expect(screen.getByText('Déroulement d\'un tour')).toBeInTheDocument();
+    expect(screen.getByText("Déroulement d'un tour")).toBeInTheDocument();
     expect(screen.getByText('Règles spéciales')).toBeInTheDocument();
     expect(screen.getByText('Pénalités')).toBeInTheDocument();
     expect(screen.getByText('Fin de partie')).toBeInTheDocument();
