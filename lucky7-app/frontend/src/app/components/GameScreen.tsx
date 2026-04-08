@@ -106,6 +106,7 @@ export interface RulesConfig {
   double: boolean;
   relance: boolean;
   marchandSable: boolean;
+  legende: boolean;
 }
 
 // ---- Rules Dialog ----
@@ -164,6 +165,11 @@ function RulesDialog({ rules, onClose }: { rules: RulesConfig; onClose: () => vo
             label="Marchand de sable"
             active={rules.marchandSable}
             desc="Score de 3 → immunité ce tour"
+          />
+          <RuleItem
+            label="Légende"
+            active={rules.legende}
+            desc="Score de 11 (5+6) → tous les joueurs avec un dé à 5 ou 6 boivent"
           />
         </div>
       </div>
@@ -243,6 +249,9 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
   const [result, setResult] = useState<RoundResult | null>(null);
   const [luckyProlongations, setLuckyProlongations] = useState(0);
   const [looserProlongations, setLooserProlongations] = useState(0);
+  // Cumulative sip bonus from prolongations (sum of participants−1 per round)
+  const [luckyProlongBonus, setLuckyProlongBonus] = useState(0);
+  const [looserProlongBonus, setLooserProlongBonus] = useState(0);
 
   // Prolongation state
   const [prolongation, setProlongation] = useState<ProlongationState | null>(null);
@@ -462,7 +471,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           ? ` (+${luckyProlongations} prolongation${luckyProlongations > 1 ? 's' : ''})`
           : '';
       msgs.push(
-        `🏆 ${luckyPlayers[0].name} distribue ${drinks} gorgée${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}${extra}`
+        `🏆 ${luckyPlayers[0].name} distribue ${drinks} ${drinks > 1 ? 's' : ''}${ls.score === ann ? ' — score exact !' : ''}${extra}`
       );
     }
 
@@ -474,7 +483,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           ? ` (+${looserProlongations} prolongation${looserProlongations > 1 ? 's' : ''})`
           : '';
       msgs.push(
-        `💀 ${looserPlayers[0].name} boit ${drinks} gorgée${drinks > 1 ? 's' : ''}${extra}`
+        `💀 ${looserPlayers[0].name} boit ${drinks} ${drinks > 1 ? 's' : ''}${extra}`
       );
     }
 
@@ -486,11 +495,11 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           const diceVal = s.dice1;
           if (diceVal === 1) {
             msgs.push(
-              `🎲 ${s.player.name} — Double 1 : distribue 1 gorgée ou fait relancer un joueur`
+              `🎲 ${s.player.name} — Double 1 : distribue 1 ou fait relancer un joueur`
             );
           } else {
             msgs.push(
-              `🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} gorgée${diceVal > 1 ? 's' : ''}`
+              `🎲 ${s.player.name} — Double ${diceVal} : distribue ${diceVal} ${diceVal > 1 ? 's' : ''}`
             );
           }
         });
@@ -503,6 +512,22 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
         .forEach(s => {
           msgs.push(`🌙 ${s.player.name} — Marchand de sable : immunité !`);
         });
+    }
+
+    // Légende — optionnel
+    if (rules.legende) {
+      const legendeTriggered = playerScores.some(s => s.score === 11);
+      if (legendeTriggered) {
+        const affected = playerScores.filter(
+          s => s.dice1 === 5 || s.dice1 === 6 || s.dice2 === 5 || s.dice2 === 6
+        );
+        if (affected.length > 0) {
+          const names = affected.map(s => s.player.name).join(', ');
+          msgs.push(
+            `⭐ Légende ! ${names} boi${affected.length > 1 ? 'vent' : 't'} 1 (dé à 5 ou 6)`
+          );
+        }
+      }
     }
 
     return msgs;
@@ -720,12 +745,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         )}
                         {roll && !showAnim && roll.score === 3 && rules.marchandSable && (
                           <Badge variant="secondary" className="text-xs shrink-0">
-                            Marchand
+                            Marchand de sable
                           </Badge>
                         )}
                         {relancedPlayerIds.has(player.id) && (
                           <Badge variant="outline" className="text-xs shrink-0">
-                            Relancé
+                            Relance
                           </Badge>
                         )}
                       </div>
@@ -837,7 +862,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               <p className="text-xs text-muted-foreground">
                 Enjeu :{' '}
                 <span className="font-semibold text-foreground">
-                  {drinkStake} gorgée{drinkStake > 1 ? 's' : ''}
+                  {drinkStake} {drinkStake > 1 ? 's' : ''}
                 </span>
                 {' · '}Annonce : {announcement}
               </p>
