@@ -50,15 +50,13 @@ export default function JoinForm({ onJoined }: JoinFormProps) {
             type="text"
             placeholder="Ton pseudo..."
             value={pseudo}
-            onChange={(e) => setPseudo(e.target.value)}
+            onChange={e => setPseudo(e.target.value)}
             maxLength={20}
             disabled={loading}
             className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition disabled:opacity-50"
           />
 
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
           <button
             type="submit"

@@ -20,10 +20,8 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">Lucky7 🎲</CardTitle>
-          <CardDescription>
-            Lance les dés, sois le plus proche de l'annonce !
-          </CardDescription>
+          <CardTitle className="text-3xl font-bold">Lucky7</CardTitle>
+          <CardDescription>Lance les dés, sois le plus proche de l'annonce !</CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3">
