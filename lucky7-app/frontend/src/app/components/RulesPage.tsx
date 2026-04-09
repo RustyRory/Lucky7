@@ -83,12 +83,12 @@ export default function RulesPage({ onBack }: RulesPageProps) {
               <Rule
                 emoji="💀"
                 title="Looser"
-                desc="Le joueur le plus éloigné de l'annonce boit 1 gorgée."
+                desc="Le joueur le plus éloigné de l'annonce boit 1 gorgée. De manière générale, les gorgées à boire et à distribuer se compensent : un joueur peut choisir de les soustraire ou de les appliquer séparément. Exemple : 4 gorgées à donner + 1 à boire → donner 3 (4 − 1), ou donner 4 et boire 1."
               />
               <Rule
                 emoji="⚖️"
-                title="Égalité"
-                desc="En cas d'égalité pour le Lucky ou le Looser, les joueurs concernés rejouent un tour supplémentaire."
+                title="Égalité & Prolongation"
+                desc="En cas d'égalité pour le Lucky ou le Looser, les joueurs concernés rejouent. La mise augmente de (nombre de participants − 1) gorgées à chaque prolongation. Exemple : 5 joueurs à égalité → mise passe à 1 + 4 = 5. Si 3 restent encore à égalité → 5 + 2 = 7."
               />
             </div>
           </Section>
@@ -113,11 +113,15 @@ export default function RulesPage({ onBack }: RulesPageProps) {
                 title="Marchand de sable"
                 desc="Score de 3 (1+2) → immunité totale contre les gorgées pour ce tour."
               />
-              <Rule emoji="7️⃣" title="Jeton" desc="Score de 7 → le joueur boit 1 gorgée." />
+              <Rule
+                emoji="7️⃣"
+                title="Jeton"
+                desc="Score de 7 → le joueur boit 1 gorgée et ajoute +1 au pot. Le pot s'accumule entre les tours jusqu'à être consommé par un Jackpot ou un Démon."
+              />
               <Rule
                 emoji="🎰"
                 title="Jackpot"
-                desc="Trois joueurs obtiennent un 7 → la règle Jeton est suspendue. Un dé est lancé pour fixer le pot, les trois joueurs relancent pour décider qui le distribue."
+                desc="3+ joueurs obtiennent un 7 → la règle Jeton est suspendue ce tour. Si Jeton est actif, le pot accumulé est l'enjeu ; sinon un dé fixe le pot. Les joueurs relancent : le plus proche de l'annonce distribue le pot."
               />
               <Rule
                 emoji="⭐"
@@ -127,7 +131,7 @@ export default function RulesPage({ onBack }: RulesPageProps) {
               <Rule
                 emoji="😈"
                 title="Démon"
-                desc="Trois joueurs obtiennent un 6 → un dé est lancé pour le pot, et ces trois joueurs relancent pour décider qui le boit."
+                desc="3+ joueurs ont un dé à 6 → si Jeton est actif, le pot accumulé est l'enjeu ; sinon un dé fixe le pot. Les joueurs relancent : le plus éloigné de l'annonce boit le pot."
               />
             </div>
           </Section>

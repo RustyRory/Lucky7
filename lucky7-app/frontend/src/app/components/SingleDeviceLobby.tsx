@@ -33,22 +33,37 @@ const TOGGLEABLE_RULES: ToggleableRule[] = [
   },
   {
     key: 'relance',
-    label: 'Relance (Double 1)',
+    label: 'Relance',
     desc: 'Score 1•1 → le joueur peut relancer ses dés une fois',
   },
   {
     key: 'marchandSable',
     label: 'Marchand de sable',
-    desc: 'Score de 3 (1+2) → immunité contre les gorgées ce tour',
+    desc: 'Score de 3 (1•2) → immunité contre les gorgées ce tour',
+  },
+  {
+    key: 'legende',
+    label: 'Légende',
+    desc: 'Score de 11 (5•6) → tous les joueurs avec un dé à 5 ou 6 boivent 1 gorgée',
+  },
+  {
+    key: 'jeton',
+    label: 'Jeton',
+    desc: 'Score de 7 → boit 1 gorgée et ajoute +1 au pot (cumulable entre les tours)',
+  },
+  {
+    key: 'jackpot',
+    label: 'Jackpot',
+    desc: '3+ joueurs à 7 → jeton suspendu, reroll pour distribuer le pot',
+  },
+  {
+    key: 'demon',
+    label: 'Démon',
+    desc: '3+ joueurs avec un dé à 6 → reroll pour décider qui boit le pot',
   },
 ];
 
-const DISABLED_RULES: DisabledRule[] = [
-  { label: 'Jeton', desc: 'Score de 7 → boit 1 gorgée' },
-  { label: 'Jackpot', desc: 'Trois joueurs à 7 → relance pour distribuer un pot' },
-  { label: 'Légende', desc: 'Score de 11 (5+6) → joueurs avec dé à 5 ou 6 boivent' },
-  { label: 'Démon', desc: 'Trois joueurs à 6 → relance pour distribuer un pot' },
-];
+const DISABLED_RULES: DisabledRule[] = [];
 
 const HARD_RULE: DisabledRule = {
   label: 'Mode hard',
@@ -59,6 +74,10 @@ const DEFAULT_RULES: RulesConfig = {
   double: true,
   relance: false,
   marchandSable: true,
+  legende: false,
+  jeton: false,
+  jackpot: false,
+  demon: false,
 };
 
 // ---- Rules Config Dialog ----
@@ -95,55 +114,72 @@ function RulesConfigDialog({
 
         <div className="flex flex-col gap-5 px-5 py-4">
           {/* Règles activables */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Règles optionnelles
             </p>
             {TOGGLEABLE_RULES.map(rule => (
-              <label key={rule.key} className="flex items-start gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rules[rule.key]}
-                  onChange={() => onToggle(rule.key)}
-                  className="mt-0.5 accent-primary shrink-0 w-4 h-4"
-                />
-                <div>
+              <button
+                key={rule.key}
+                type="button"
+                onClick={() => onToggle(rule.key)}
+                className={`flex items-center gap-3 w-full text-left rounded-xl px-3 py-3 transition-colors select-none ${
+                  rules[rule.key]
+                    ? 'bg-primary/10 ring-1 ring-primary/30'
+                    : 'bg-muted/50 ring-1 ring-transparent'
+                }`}
+              >
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium leading-tight">{rule.label}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{rule.desc}</p>
                 </div>
-              </label>
+                {/* Toggle switch */}
+                <div
+                  className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
+                    rules[rule.key] ? 'bg-primary' : 'bg-foreground/20'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                      rules[rule.key] ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </div>
+              </button>
             ))}
           </div>
 
           <Separator />
 
-          {/* Règles désactivées */}
-          <div className="flex flex-col gap-3">
+          {/* Bientôt disponible */}
+          <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Bientôt disponible
             </p>
-            <div className="flex flex-col gap-2">
-              {DISABLED_RULES.map(rule => (
-                <label
-                  key={rule.label}
-                  className="flex items-start gap-3 opacity-40 cursor-not-allowed select-none"
-                >
-                  <input type="checkbox" disabled className="mt-0.5 shrink-0 w-4 h-4" />
-                  <div>
-                    <p className="text-sm font-medium leading-tight">{rule.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{rule.desc}</p>
-                  </div>
-                </label>
-              ))}
-              <label className="flex items-start gap-3 opacity-60 cursor-not-allowed select-none">
-                <input type="checkbox" disabled className="mt-0.5 shrink-0 w-4 h-4" />
-                <div>
-                  <p className="text-sm font-medium leading-tight text-destructive">
-                    {HARD_RULE.label}
-                  </p>
-                  <p className="text-xs text-destructive/70 mt-0.5">{HARD_RULE.desc}</p>
+            {DISABLED_RULES.map(rule => (
+              <div
+                key={rule.label}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 bg-muted/30 opacity-40"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium leading-tight">{rule.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{rule.desc}</p>
                 </div>
-              </label>
+                <div className="relative shrink-0 w-11 h-6 rounded-full bg-foreground/20">
+                  <div className="absolute top-0.5 translate-x-0.5 w-5 h-5 bg-white rounded-full shadow" />
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center gap-3 rounded-xl px-3 py-3 bg-destructive/5 opacity-50">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium leading-tight text-destructive">
+                  {HARD_RULE.label}
+                </p>
+                <p className="text-xs text-destructive/70 mt-0.5">{HARD_RULE.desc}</p>
+              </div>
+              <div className="relative shrink-0 w-11 h-6 rounded-full bg-destructive/20">
+                <div className="absolute top-0.5 translate-x-0.5 w-5 h-5 bg-white rounded-full shadow" />
+              </div>
             </div>
           </div>
         </div>
