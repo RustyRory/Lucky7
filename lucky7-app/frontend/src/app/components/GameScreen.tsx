@@ -86,7 +86,7 @@ function DiceFace({
 // direction 'up' → cycle 2→12 (jackpot), 'down' → cycle 12→2 (démon)
 function useSlotMachine(rolling: boolean, direction: 'up' | 'down' = 'up'): number {
   const [display, setDisplay] = useState(direction === 'up' ? 2 : 12);
-  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const counterRef = useRef(direction === 'up' ? 2 : 12);
 
   useEffect(() => {
@@ -95,11 +95,11 @@ function useSlotMachine(rolling: boolean, direction: 'up' | 'down' = 'up'): numb
 
     // Phases : [durée d'un frame, durée totale de la phase]
     const phases = [
-      { interval: 50,  phaseDuration: 700  }, // ultra rapide
-      { interval: 90,  phaseDuration: 600  }, // rapide
-      { interval: 160, phaseDuration: 500  }, // ralentit
-      { interval: 280, phaseDuration: 420  }, // lent
-      { interval: 460, phaseDuration: 280  }, // très lent — derniers clics
+      { interval: 50, phaseDuration: 700 }, // ultra rapide
+      { interval: 90, phaseDuration: 600 }, // rapide
+      { interval: 160, phaseDuration: 500 }, // ralentit
+      { interval: 280, phaseDuration: 420 }, // lent
+      { interval: 460, phaseDuration: 280 }, // très lent — derniers clics
     ];
 
     let phaseIdx = 0;
@@ -108,8 +108,12 @@ function useSlotMachine(rolling: boolean, direction: 'up' | 'down' = 'up'): numb
     function tick() {
       counterRef.current =
         direction === 'up'
-          ? counterRef.current >= 12 ? 2 : counterRef.current + 1
-          : counterRef.current <= 2  ? 12 : counterRef.current - 1;
+          ? counterRef.current >= 12
+            ? 2
+            : counterRef.current + 1
+          : counterRef.current <= 2
+            ? 12
+            : counterRef.current - 1;
       setDisplay(counterRef.current);
 
       const phase = phases[phaseIdx];
@@ -135,11 +139,12 @@ function useSlotMachine(rolling: boolean, direction: 'up' | 'down' = 'up'): numb
 const SLOT_STYLES = {
   jackpot: {
     active: 'border-yellow-500/70 bg-yellow-500/10 text-yellow-500 dark:text-yellow-400',
-    idle:   'border-border text-muted-foreground',
+    idle: 'border-border text-muted-foreground',
   },
   demon: {
-    active: 'border-red-700/70 bg-red-950/30 text-red-400 dark:text-red-400 shadow-[inset_0_0_8px_rgba(220,38,38,0.2)]',
-    idle:   'border-border text-muted-foreground',
+    active:
+      'border-red-700/70 bg-red-950/30 text-red-400 dark:text-red-400 shadow-[inset_0_0_8px_rgba(220,38,38,0.2)]',
+    idle: 'border-border text-muted-foreground',
   },
 } as const;
 
@@ -173,13 +178,21 @@ function CoinAnimation() {
   useEffect(() => {
     const t1 = setTimeout(() => setStage(1), 80);
     const t2 = setTimeout(() => setStage(2), 680);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
   return (
     <span
       className="absolute right-3 top-1 text-lg pointer-events-none select-none z-20"
       style={{
-        transform: stage === 2 ? 'translateY(-22px) scale(0.4)' : stage === 1 ? 'translateY(-10px)' : 'translateY(0)',
+        transform:
+          stage === 2
+            ? 'translateY(-22px) scale(0.4)'
+            : stage === 1
+              ? 'translateY(-10px)'
+              : 'translateY(0)',
         opacity: stage === 2 ? 0 : 1,
         transition: 'transform 0.55s ease-out, opacity 0.28s ease-in 0.42s',
       }}
@@ -863,9 +876,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               trigger.player.id !== s.player.id
                 ? ` (déclenché par ${trigger.player.name} avec ${trigger.dice1}•${trigger.dice2})`
                 : '';
-            msgs.push(
-              `⭐ - ${s.player.name} (Légende) : boit 1 — dé à ${highDie}${by}`
-            );
+            msgs.push(`⭐ - ${s.player.name} (Légende) : boit 1 — dé à ${highDie}${by}`);
           });
       }
     }
@@ -888,9 +899,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
           `🎰 - ${sr.winner.name} (Jackpot) : donne ${sr.potValue} — meilleur score du reroll`
         );
       } else {
-        msgs.push(
-          `😈 - ${sr.winner.name} (Démon) : boit ${sr.potValue} — pire score du reroll`
-        );
+        msgs.push(`😈 - ${sr.winner.name} (Démon) : boit ${sr.potValue} — pire score du reroll`);
       }
     });
 
@@ -1146,12 +1155,14 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               {/* Tableau complet — tous les joueurs */}
               <div className="flex flex-col gap-1.5">
                 {(() => {
-                  const jackpotVisible = allRolled && rules.jackpot &&
+                  const jackpotVisible =
+                    allRolled &&
+                    rules.jackpot &&
                     rolledDice.filter(r => r.score === 7).length === 3;
-                  const demonVisible = allRolled && rules.demon &&
-                    rolledDice.filter(r => r.score === 6).length === 3;
-                  const legendeVisible = allRolled && rules.legende &&
-                    rolledDice.some(r => r.score === 11);
+                  const demonVisible =
+                    allRolled && rules.demon && rolledDice.filter(r => r.score === 6).length === 3;
+                  const legendeVisible =
+                    allRolled && rules.legende && rolledDice.some(r => r.score === 11);
 
                   return players.map((player, index) => {
                     const roll = rolledDice.find(r => r.playerId === player.id);
@@ -1162,12 +1173,31 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
 
                     const isJackpotPlayer = jackpotVisible && roll?.score === 7;
                     const isDemonPlayer = demonVisible && roll?.score === 6;
-                    const isMarchand = revealed && !isJackpotPlayer && !isDemonPlayer && rules.marchandSable && roll.score === 3;
-                    const isLegende = revealed && !isJackpotPlayer && !isDemonPlayer && legendeVisible &&
+                    const isMarchand =
+                      revealed &&
+                      !isJackpotPlayer &&
+                      !isDemonPlayer &&
+                      rules.marchandSable &&
+                      roll.score === 3;
+                    const isLegende =
+                      revealed &&
+                      !isJackpotPlayer &&
+                      !isDemonPlayer &&
+                      legendeVisible &&
                       (roll.dice1 >= 5 || roll.dice2 >= 5);
-                    const isJeton = revealed && !isJackpotPlayer && !isDemonPlayer && rules.jeton &&
-                      !jackpotVisible && roll.score === 7;
-                    const isDouble = revealed && !isJackpotPlayer && !isDemonPlayer && rules.double && roll.isDouble;
+                    const isJeton =
+                      revealed &&
+                      !isJackpotPlayer &&
+                      !isDemonPlayer &&
+                      rules.jeton &&
+                      !jackpotVisible &&
+                      roll.score === 7;
+                    const isDouble =
+                      revealed &&
+                      !isJackpotPlayer &&
+                      !isDemonPlayer &&
+                      rules.double &&
+                      roll.isDouble;
                     const isRelanced = relancedPlayerIds.has(player.id);
 
                     const containerClass = [
@@ -1181,10 +1211,10 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                             : isMarchand
                               ? 'bg-amber-800/15 border-amber-500/40'
                               : isDouble
-                                    ? 'bg-blue-500/10 border-blue-500/40'
-                                    : isCurrent && !roll
-                                      ? 'border-primary/40 bg-primary/5'
-                                      : 'border-border',
+                                ? 'bg-blue-500/10 border-blue-500/40'
+                                : isCurrent && !roll
+                                  ? 'border-primary/40 bg-primary/5'
+                                  : 'border-border',
                     ].join(' ');
 
                     return (
@@ -1192,18 +1222,28 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         {/* Décorations thématiques */}
                         {isJackpotPlayer && (
                           <>
-                            <span className="absolute right-1 top-0 text-xl opacity-[0.12] select-none pointer-events-none leading-tight">♠♥</span>
-                            <span className="absolute right-7 bottom-0 text-lg opacity-[0.10] select-none pointer-events-none leading-tight">♦♣</span>
+                            <span className="absolute right-1 top-0 text-xl opacity-[0.12] select-none pointer-events-none leading-tight">
+                              ♠♥
+                            </span>
+                            <span className="absolute right-7 bottom-0 text-lg opacity-[0.10] select-none pointer-events-none leading-tight">
+                              ♦♣
+                            </span>
                           </>
                         )}
                         {isDemonPlayer && (
-                          <span className="absolute right-1 -top-0.5 text-2xl opacity-[0.18] select-none pointer-events-none">🔥</span>
+                          <span className="absolute right-1 -top-0.5 text-2xl opacity-[0.18] select-none pointer-events-none">
+                            🔥
+                          </span>
                         )}
                         {isMarchand && (
-                          <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">☀️🏜️</span>
+                          <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
+                            ☀️🏜️
+                          </span>
                         )}
                         {isLegende && (
-                          <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">⚔️🛡️</span>
+                          <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
+                            ⚔️🛡️
+                          </span>
                         )}
                         {isDouble && (
                           <span className="absolute right-1 top-0 text-5xl font-black opacity-[0.18] select-none pointer-events-none leading-tight text-blue-300">
@@ -1220,9 +1260,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                           {isMarchand && <span>🌙</span>}
                           <span
                             className={`text-sm font-medium truncate ${
-                              !roll && !isCurrent
-                                ? 'text-muted-foreground'
-                                : ''
+                              !roll && !isCurrent ? 'text-muted-foreground' : ''
                             }`}
                           >
                             {player.name}
@@ -1702,24 +1740,31 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
               {(() => {
                 const legendeTriggered =
                   rules.legende && result!.playerScores.some(ps => ps.score === 11);
-                const jackpotWinnerId = result!.specialResults.find(sr => sr.type === 'jackpot')?.winner.id;
-                const demonWinnerId  = result!.specialResults.find(sr => sr.type === 'demon')?.winner.id;
+                const jackpotWinnerId = result!.specialResults.find(sr => sr.type === 'jackpot')
+                  ?.winner.id;
+                const demonWinnerId = result!.specialResults.find(sr => sr.type === 'demon')?.winner
+                  .id;
 
                 return sortedScores.map(s => {
                   const isLucky = result!.luckyPlayers.some(p => p.id === s.player.id);
                   const isLooser = result!.looserPlayers.some(p => p.id === s.player.id);
                   const isJackpotPlayer = !!jackpotWinnerId && s.player.id === jackpotWinnerId;
-                  const isDemonPlayer   = !!demonWinnerId  && s.player.id === demonWinnerId;
-                  const isMarchand = !isJackpotPlayer && !isDemonPlayer && rules.marchandSable && s.score === 3;
+                  const isDemonPlayer = !!demonWinnerId && s.player.id === demonWinnerId;
+                  const isMarchand =
+                    !isJackpotPlayer && !isDemonPlayer && rules.marchandSable && s.score === 3;
                   const isLegende =
-                    !isJackpotPlayer && !isDemonPlayer && !isMarchand &&
-                    legendeTriggered && (s.dice1 >= 5 || s.dice2 >= 5);
+                    !isJackpotPlayer &&
+                    !isDemonPlayer &&
+                    !isMarchand &&
+                    legendeTriggered &&
+                    (s.dice1 >= 5 || s.dice2 >= 5);
                   const isJeton =
-                    !isJackpotPlayer && !isDemonPlayer &&
-                    rules.jeton && !result!.jackpotTriggered && s.score === 7;
-                  const isDouble =
-                    !isJackpotPlayer && !isDemonPlayer &&
-                    rules.double && s.isDouble;
+                    !isJackpotPlayer &&
+                    !isDemonPlayer &&
+                    rules.jeton &&
+                    !result!.jackpotTriggered &&
+                    s.score === 7;
+                  const isDouble = !isJackpotPlayer && !isDemonPlayer && rules.double && s.isDouble;
                   const isRelanced = relancedPlayerIds.has(s.player.id);
 
                   const containerClass = [
@@ -1741,22 +1786,31 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
 
                   return (
                     <div key={s.player.id} className={containerClass}>
-
                       {/* ── Décorations thématiques ── */}
                       {isJackpotPlayer && (
                         <>
-                          <span className="absolute right-1 top-0 text-xl opacity-[0.12] select-none pointer-events-none leading-tight">♠♥</span>
-                          <span className="absolute right-7 bottom-0 text-lg opacity-[0.10] select-none pointer-events-none leading-tight">♦♣</span>
+                          <span className="absolute right-1 top-0 text-xl opacity-[0.12] select-none pointer-events-none leading-tight">
+                            ♠♥
+                          </span>
+                          <span className="absolute right-7 bottom-0 text-lg opacity-[0.10] select-none pointer-events-none leading-tight">
+                            ♦♣
+                          </span>
                         </>
                       )}
                       {isDemonPlayer && (
-                        <span className="absolute right-1 -top-0.5 text-2xl opacity-[0.18] select-none pointer-events-none">🔥</span>
+                        <span className="absolute right-1 -top-0.5 text-2xl opacity-[0.18] select-none pointer-events-none">
+                          🔥
+                        </span>
                       )}
                       {isMarchand && (
-                        <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">☀️🏜️</span>
+                        <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
+                          ☀️🏜️
+                        </span>
                       )}
                       {isLegende && (
-                        <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">⚔️🛡️</span>
+                        <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
+                          ⚔️🛡️
+                        </span>
                       )}
                       {isDouble && (
                         <span className="absolute right-1 top-0 text-5xl font-black opacity-[0.18] select-none pointer-events-none leading-tight text-blue-300">
@@ -1770,9 +1824,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         {isLucky && <span>🏆</span>}
                         {isLooser && !isLucky && <span>💀</span>}
                         {isMarchand && <span>🌙</span>}
-                        <span className="text-sm font-medium">
-                          {s.player.name}
-                        </span>
+                        <span className="text-sm font-medium">{s.player.name}</span>
                         {isJackpotPlayer && <span>🎰</span>}
                         {isDemonPlayer && <span>😈</span>}
                         {isLegende && <span>⭐</span>}
@@ -1872,8 +1924,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         if (a.immune) parts.push('immunisé 🌙');
                         return (
                           <p key={a.player.id} className="text-sm">
-                            <span className="font-medium">{a.player.name}</span>{' '}
-                            {parts.join(' · ')}
+                            <span className="font-medium">{a.player.name}</span> {parts.join(' · ')}
                           </p>
                         );
                       })}
