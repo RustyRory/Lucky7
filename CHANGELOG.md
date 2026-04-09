@@ -7,6 +7,26 @@ Le format est basé sur Keep a Changelog et ce projet adhère au Semantic Versio
 ## [Unreleased]
 ---
 
+## [0.3.0] - 2026-04-08
+
+### Added
+
+* **Règle Légende** — score de 11 (5•6) : tous les joueurs ayant un dé à 5 ou 6 boivent 1 gorgée. Activable dans la configuration de partie.
+* **Règle Jeton** — score de 7 : le joueur boit 1 gorgée et ajoute +1 au pot. Le pot s'accumule entre les tours jusqu'à être consommé par un Jackpot ou un Démon.
+* **Règle Jackpot** — si 3 joueurs ou plus obtiennent un 7 : la règle Jeton est suspendue ce tour. Les joueurs concernés relancent ; le plus proche de l'annonce distribue le pot (pot accumulé ou dé si vide).
+* **Règle Démon** — si 3 joueurs ou plus ont un dé à 6 : les joueurs concernés relancent ; le plus éloigné de l'annonce boit le pot (pot accumulé ou dé si vide).
+* **Phase `special-event`** — nouvelle phase de jeu déclenchée après le lancer quand un Jackpot ou un Démon est détecté. Les événements sont résolus en séquence avant d'afficher les résultats normaux.
+* **Pot persistant** — le pot de gorgées accumulé par la règle Jeton persiste entre les tours jusqu'à consommation.
+* **Bonus de prolongation cumulatif** — les gorgées du Lucky et du Looser s'incrémentent de `(participants − 1)` à chaque prolongation successive.
+* **Règle Hardcore** — affichée dans le configurateur de règles comme « bientôt disponible » (non activable).
+
+### Changed
+
+* **Configurateur de règles (lobby)** — le dialog de règles expose désormais les règles Légende, Jeton, Jackpot et Démon avec des toggles individuels. Les règles non encore disponibles apparaissent dans une section distincte grisée.
+* **Page des règles** — mise à jour pour documenter Jeton, Jackpot et Démon, ainsi que la précision sur la compensation gorgées à donner / à boire.
+
+---
+
 ## [0.2.0] - 2026-04-08
 
 ### Added
