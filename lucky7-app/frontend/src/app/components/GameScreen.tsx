@@ -172,7 +172,16 @@ function SlotMachineDisplay({
   );
 }
 
-const CONFETTI_COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#f97316', '#ec4899', '#14b8a6'];
+const CONFETTI_COLORS = [
+  '#f59e0b',
+  '#ef4444',
+  '#3b82f6',
+  '#10b981',
+  '#8b5cf6',
+  '#f97316',
+  '#ec4899',
+  '#14b8a6',
+];
 
 function TrophyConfetti() {
   return (
@@ -182,7 +191,13 @@ function TrophyConfetti() {
         <span
           key={i}
           className="anim-confetti-particle"
-          style={{ backgroundColor: color, '--a': `${i * 45}deg`, animationDelay: `${(i * 0.14) % 1.1}s` } as React.CSSProperties}
+          style={
+            {
+              backgroundColor: color,
+              '--a': `${i * 45}deg`,
+              animationDelay: `${(i * 0.14) % 1.1}s`,
+            } as React.CSSProperties
+          }
         />
       ))}
     </span>
@@ -215,7 +230,10 @@ const jackpotCoord = (() => {
     },
     unregister(cb: (d: number) => void) {
       slots = slots.filter(s => s !== cb);
-      if (slots.length === 0) { assignments = jShuffle(JACKPOT_TIERS); done = 0; }
+      if (slots.length === 0) {
+        assignments = jShuffle(JACKPOT_TIERS);
+        done = 0;
+      }
     },
     reportDone() {
       done++;
@@ -233,13 +251,20 @@ const jackpotCoord = (() => {
 function JackpotBadge() {
   const [reels, setReels] = useState([7, 7, 7]);
   const [locked, setLocked] = useState([false, false, false]);
-  const r = useRef<{ timers: ReturnType<typeof setTimeout>[]; duration: number; spin: () => void }>({
-    timers: [], duration: 2000, spin: () => {},
-  });
+  const r = useRef<{ timers: ReturnType<typeof setTimeout>[]; duration: number; spin: () => void }>(
+    {
+      timers: [],
+      duration: 2000,
+      spin: () => {},
+    }
+  );
 
   useEffect(() => {
     function clearAll() {
-      r.current.timers.forEach(t => { clearTimeout(t); clearInterval(t as unknown as ReturnType<typeof setInterval>); });
+      r.current.timers.forEach(t => {
+        clearTimeout(t);
+        clearInterval(t as unknown as ReturnType<typeof setInterval>);
+      });
       r.current.timers = [];
     }
 
@@ -251,9 +276,16 @@ function JackpotBadge() {
       const ivals: ReturnType<typeof setInterval>[] = [];
 
       [0, 1, 2].forEach(i => {
-        const id = setInterval(() => {
-          setReels(prev => { const n = [...prev]; n[i] = Math.floor(Math.random() * 9) + 1; return n; });
-        }, 80 + i * 15);
+        const id = setInterval(
+          () => {
+            setReels(prev => {
+              const n = [...prev];
+              n[i] = Math.floor(Math.random() * 9) + 1;
+              return n;
+            });
+          },
+          80 + i * 15
+        );
         r.current.timers.push(id as unknown as ReturnType<typeof setTimeout>);
         ivals.push(id);
       });
@@ -261,8 +293,16 @@ function JackpotBadge() {
       [base, base + 400, base + 800].forEach((delay, i) => {
         const t = setTimeout(() => {
           clearInterval(ivals[i]);
-          setReels(prev => { const n = [...prev]; n[i] = 7; return n; });
-          setLocked(prev => { const n = [...prev]; n[i] = true; return n; });
+          setReels(prev => {
+            const n = [...prev];
+            n[i] = 7;
+            return n;
+          });
+          setLocked(prev => {
+            const n = [...prev];
+            n[i] = true;
+            return n;
+          });
           // Last reel done — signal coordinator; wait for all badges before restart
           if (i === 2) jackpotCoord.reportDone();
         }, delay);
@@ -270,31 +310,48 @@ function JackpotBadge() {
       });
     };
 
-    const cb = (d: number) => { r.current.duration = d; r.current.spin(); };
+    const cb = (d: number) => {
+      r.current.duration = d;
+      r.current.spin();
+    };
     r.current.duration = jackpotCoord.register(cb);
     r.current.spin();
 
-    return () => { jackpotCoord.unregister(cb); clearAll(); };
+    return () => {
+      jackpotCoord.unregister(cb);
+      clearAll();
+    };
   }, []);
 
   const allLocked = locked.every(Boolean);
   const [rainKey, setRainKey] = useState(0);
   const wasLocked = useRef(false);
-  if (allLocked && !wasLocked.current) { wasLocked.current = true; setRainKey(k => k + 1); }
+  if (allLocked && !wasLocked.current) {
+    wasLocked.current = true;
+    setRainKey(k => k + 1);
+  }
   if (!allLocked) wasLocked.current = false;
 
   return (
     <span className="relative inline-flex items-center gap-px bg-green-500/15 border border-green-500/40 rounded px-1 py-px font-black tabular-nums leading-none text-[11px]">
       {reels.map((n, i) => (
-        <span key={i} className={`w-[9px] text-center transition-colors duration-150 ${locked[i] ? 'text-yellow-400' : 'text-green-400'}`}>{n}</span>
-      ))}
-      {allLocked && [0, 1, 2].map(i => (
         <span
-          key={`${rainKey}-${i}`}
-          className="anim-coin-rain"
-          style={{ right: `${i * 10}px`, animationDelay: `${i * 0.12}s`, zIndex: 50 }}
-        >🪙</span>
+          key={i}
+          className={`w-[9px] text-center transition-colors duration-150 ${locked[i] ? 'text-yellow-400' : 'text-green-400'}`}
+        >
+          {n}
+        </span>
       ))}
+      {allLocked &&
+        [0, 1, 2].map(i => (
+          <span
+            key={`${rainKey}-${i}`}
+            className="anim-coin-rain"
+            style={{ right: `${i * 10}px`, animationDelay: `${i * 0.12}s`, zIndex: 50 }}
+          >
+            🪙
+          </span>
+        ))}
     </span>
   );
 }
@@ -316,7 +373,9 @@ function DoubleBadge({ value }: { value: number }) {
 
   return (
     <span className="inline-flex items-center bg-blue-500/15 border border-blue-500/40 rounded px-1 py-px font-black tabular-nums leading-none text-[11px] text-blue-400">
-      <span key={display} className="anim-badge-slam">x{display}</span>
+      <span key={display} className="anim-badge-slam">
+        x{display}
+      </span>
     </span>
   );
 }
@@ -1280,8 +1339,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                     rolledDice.filter(r => r.score === 7).length === 3;
                   const demonVisible =
                     allRolled && rules.demon && rolledDice.filter(r => r.score === 6).length === 3;
-                  const legendeVisible =
-                    rules.legende && rolledDice.some(r => r.score === 11);
+                  const legendeVisible = rules.legende && rolledDice.some(r => r.score === 11);
 
                   return players.map((player, index) => {
                     const roll = rolledDice.find(r => r.playerId === player.id);
@@ -1305,7 +1363,11 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                       legendeVisible &&
                       (roll.dice1 >= 5 || roll.dice2 >= 5);
                     const isLegendeTrigger =
-                      revealed && !isJackpotPlayer && !isDemonPlayer && legendeVisible && roll.score === 11;
+                      revealed &&
+                      !isJackpotPlayer &&
+                      !isDemonPlayer &&
+                      legendeVisible &&
+                      roll.score === 11;
                     const isJeton =
                       revealed &&
                       !isJackpotPlayer &&
@@ -1358,7 +1420,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                             🔥
                           </span>
                         )}
-                        
+
                         {isDouble && (
                           <span className="absolute right-1 top-0 text-5xl font-black opacity-[0.18] select-none pointer-events-none leading-tight text-blue-300">
                             {roll.dice1}
@@ -1915,7 +1977,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                           🔥
                         </span>
                       )}
-                      
+
                       {isDouble && (
                         <span className="absolute right-1 top-0 text-5xl font-black opacity-[0.18] select-none pointer-events-none leading-tight text-blue-300">
                           {s.dice1}

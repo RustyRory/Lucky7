@@ -131,45 +131,124 @@
 
 /* ---- Combination row glow animations (one-shot: flash → steady) ---- */
 @keyframes glow-jackpot {
-  0%   { background-color: rgb(6 78 59 / 0.1);  border-color: rgb(52 211 153 / 0.2); box-shadow: none; }
-  20%  { background-color: rgb(6 78 59 / 0.75); border-color: rgb(52 211 153 / 1);   box-shadow: 0 0 28px 8px rgb(52 211 153 / 0.55); }
-  100% { background-color: rgb(6 78 59 / 0.35); border-color: rgb(52 211 153 / 0.6); box-shadow: 0 0 8px 1px rgb(52 211 153 / 0.2); }
+  0% {
+    background-color: rgb(6 78 59 / 0.1);
+    border-color: rgb(52 211 153 / 0.2);
+    box-shadow: none;
+  }
+  20% {
+    background-color: rgb(6 78 59 / 0.75);
+    border-color: rgb(52 211 153 / 1);
+    box-shadow: 0 0 28px 8px rgb(52 211 153 / 0.55);
+  }
+  100% {
+    background-color: rgb(6 78 59 / 0.35);
+    border-color: rgb(52 211 153 / 0.6);
+    box-shadow: 0 0 8px 1px rgb(52 211 153 / 0.2);
+  }
 }
 
 @keyframes glow-demon {
-  0%   { background-color: rgb(69 10 10 / 0.1);  border-color: rgb(185 28 28 / 0.2); box-shadow: none; }
-  20%  { background-color: rgb(69 10 10 / 0.8);  border-color: rgb(220 38 38 / 1);   box-shadow: 0 0 32px 8px rgb(220 38 38 / 0.6); }
-  100% { background-color: rgb(69 10 10 / 0.45); border-color: rgb(220 38 38 / 0.65); box-shadow: 0 0 10px 2px rgb(220 38 38 / 0.25); }
+  0% {
+    background-color: rgb(69 10 10 / 0.1);
+    border-color: rgb(185 28 28 / 0.2);
+    box-shadow: none;
+  }
+  20% {
+    background-color: rgb(69 10 10 / 0.8);
+    border-color: rgb(220 38 38 / 1);
+    box-shadow: 0 0 32px 8px rgb(220 38 38 / 0.6);
+  }
+  100% {
+    background-color: rgb(69 10 10 / 0.45);
+    border-color: rgb(220 38 38 / 0.65);
+    box-shadow: 0 0 10px 2px rgb(220 38 38 / 0.25);
+  }
 }
 
 @keyframes glow-marchand {
-  0%   { background-color: rgb(120 53 15 / 0.05); border-color: rgb(245 158 11 / 0.2); box-shadow: none; }
-  20%  { background-color: rgb(120 53 15 / 0.6);  border-color: rgb(245 158 11 / 1);   box-shadow: 0 0 24px 6px rgb(245 158 11 / 0.5); }
-  100% { background-color: rgb(120 53 15 / 0.25); border-color: rgb(245 158 11 / 0.6); box-shadow: 0 0 8px 1px rgb(245 158 11 / 0.2); }
+  0% {
+    background-color: rgb(120 53 15 / 0.05);
+    border-color: rgb(245 158 11 / 0.2);
+    box-shadow: none;
+  }
+  20% {
+    background-color: rgb(120 53 15 / 0.6);
+    border-color: rgb(245 158 11 / 1);
+    box-shadow: 0 0 24px 6px rgb(245 158 11 / 0.5);
+  }
+  100% {
+    background-color: rgb(120 53 15 / 0.25);
+    border-color: rgb(245 158 11 / 0.6);
+    box-shadow: 0 0 8px 1px rgb(245 158 11 / 0.2);
+  }
 }
 
 @keyframes glow-double {
-  0%   { background-color: rgb(59 130 246 / 0.05); border-color: rgb(59 130 246 / 0.2); box-shadow: none; }
-  20%  { background-color: rgb(59 130 246 / 0.5);  border-color: rgb(59 130 246 / 1);   box-shadow: 0 0 24px 6px rgb(59 130 246 / 0.5); }
-  100% { background-color: rgb(59 130 246 / 0.18); border-color: rgb(59 130 246 / 0.55); box-shadow: 0 0 8px 1px rgb(59 130 246 / 0.2); }
+  0% {
+    background-color: rgb(59 130 246 / 0.05);
+    border-color: rgb(59 130 246 / 0.2);
+    box-shadow: none;
+  }
+  20% {
+    background-color: rgb(59 130 246 / 0.5);
+    border-color: rgb(59 130 246 / 1);
+    box-shadow: 0 0 24px 6px rgb(59 130 246 / 0.5);
+  }
+  100% {
+    background-color: rgb(59 130 246 / 0.18);
+    border-color: rgb(59 130 246 / 0.55);
+    box-shadow: 0 0 8px 1px rgb(59 130 246 / 0.2);
+  }
 }
 
 @keyframes glow-legende {
-  0%   { background-color: rgb(88 28 135 / 0.05); border-color: rgb(192 132 252 / 0.2); box-shadow: none; }
-  20%  { background-color: rgb(88 28 135 / 0.65); border-color: rgb(192 132 252 / 1);   box-shadow: 0 0 26px 7px rgb(192 132 252 / 0.55); }
-  100% { background-color: rgb(88 28 135 / 0.3);  border-color: rgb(192 132 252 / 0.6); box-shadow: 0 0 8px 1px rgb(192 132 252 / 0.2); }
+  0% {
+    background-color: rgb(88 28 135 / 0.05);
+    border-color: rgb(192 132 252 / 0.2);
+    box-shadow: none;
+  }
+  20% {
+    background-color: rgb(88 28 135 / 0.65);
+    border-color: rgb(192 132 252 / 1);
+    box-shadow: 0 0 26px 7px rgb(192 132 252 / 0.55);
+  }
+  100% {
+    background-color: rgb(88 28 135 / 0.3);
+    border-color: rgb(192 132 252 / 0.6);
+    box-shadow: 0 0 8px 1px rgb(192 132 252 / 0.2);
+  }
 }
 
-.anim-jackpot  { animation: glow-jackpot  0.9s ease-out forwards; }
-.anim-demon    { animation: glow-demon    0.9s ease-out forwards; }
-.anim-marchand { animation: glow-marchand 0.9s ease-out forwards; }
-.anim-double   { animation: glow-double   0.9s ease-out forwards; }
-.anim-legende  { animation: glow-legende  0.9s ease-out forwards; }
+.anim-jackpot {
+  animation: glow-jackpot 0.9s ease-out forwards;
+}
+.anim-demon {
+  animation: glow-demon 0.9s ease-out forwards;
+}
+.anim-marchand {
+  animation: glow-marchand 0.9s ease-out forwards;
+}
+.anim-double {
+  animation: glow-double 0.9s ease-out forwards;
+}
+.anim-legende {
+  animation: glow-legende 0.9s ease-out forwards;
+}
 
 @keyframes badge-pop {
-  0%   { transform: scale(0) translateY(4px); opacity: 0; }
-  65%  { transform: scale(1.35) translateY(-1px); opacity: 1; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% {
+    transform: scale(0) translateY(4px);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.35) translateY(-1px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .anim-badge-pop {
@@ -178,10 +257,20 @@
 }
 
 @keyframes badge-slam {
-  0%   { transform: translateY(-12px) scale(1.5); opacity: 0.6; }
-  50%  { transform: translateY(3px)   scale(0.9); opacity: 1; }
-  70%  { transform: translateY(-2px)  scale(1.05); }
-  100% { transform: translateY(0)     scale(1); }
+  0% {
+    transform: translateY(-12px) scale(1.5);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(3px) scale(0.9);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(-2px) scale(1.05);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .anim-badge-slam {
@@ -190,12 +279,24 @@
 }
 
 @keyframes demon-laugh {
-  0%   { transform: scale(1)    rotate(0deg);  }
-  20%  { transform: scale(1.15) rotate(-5deg); }
-  40%  { transform: scale(1.2)  rotate(5deg);  }
-  60%  { transform: scale(1.15) rotate(-4deg); }
-  80%  { transform: scale(1.1)  rotate(3deg);  }
-  100% { transform: scale(1)    rotate(0deg);  }
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  20% {
+    transform: scale(1.15) rotate(-5deg);
+  }
+  40% {
+    transform: scale(1.2) rotate(5deg);
+  }
+  60% {
+    transform: scale(1.15) rotate(-4deg);
+  }
+  80% {
+    transform: scale(1.1) rotate(3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 .anim-demon-laugh {
@@ -205,13 +306,41 @@
 }
 
 @keyframes skull-decompose {
-  0%   { transform: scale(1)    rotate(0deg)  translateY(0px);  opacity: 1;    filter: blur(0px);   }
-  15%  { transform: scale(1.04) rotate(-5deg) translateY(-1px); opacity: 0.8;  filter: blur(0.4px); }
-  35%  { transform: scale(0.96) rotate(4deg)  translateY(2px);  opacity: 0.65; filter: blur(0.7px); }
-  55%  { transform: scale(1.02) rotate(-3deg) translateY(1px);  opacity: 0.75; filter: blur(0.5px); }
-  75%  { transform: scale(0.97) rotate(5deg)  translateY(3px);  opacity: 0.7;  filter: blur(0.6px); }
-  90%  { transform: scale(1.01) rotate(-2deg) translateY(1px);  opacity: 0.85; filter: blur(0.2px); }
-  100% { transform: scale(1)    rotate(0deg)  translateY(0px);  opacity: 1;    filter: blur(0px);   }
+  0% {
+    transform: scale(1) rotate(0deg) translateY(0px);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  15% {
+    transform: scale(1.04) rotate(-5deg) translateY(-1px);
+    opacity: 0.8;
+    filter: blur(0.4px);
+  }
+  35% {
+    transform: scale(0.96) rotate(4deg) translateY(2px);
+    opacity: 0.65;
+    filter: blur(0.7px);
+  }
+  55% {
+    transform: scale(1.02) rotate(-3deg) translateY(1px);
+    opacity: 0.75;
+    filter: blur(0.5px);
+  }
+  75% {
+    transform: scale(0.97) rotate(5deg) translateY(3px);
+    opacity: 0.7;
+    filter: blur(0.6px);
+  }
+  90% {
+    transform: scale(1.01) rotate(-2deg) translateY(1px);
+    opacity: 0.85;
+    filter: blur(0.2px);
+  }
+  100% {
+    transform: scale(1) rotate(0deg) translateY(0px);
+    opacity: 1;
+    filter: blur(0px);
+  }
 }
 
 .anim-skull-decompose {
@@ -221,9 +350,17 @@
 }
 
 @keyframes confetti-fly {
-  0%   { transform: translate(-50%, -50%) rotate(var(--a)) translateY(0px)   scale(1);   opacity: 1; }
-  70%  { opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) rotate(var(--a)) translateY(-20px) scale(0.2); opacity: 0; }
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(0px) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(-20px) scale(0.2);
+    opacity: 0;
+  }
 }
 
 .anim-confetti-particle {
@@ -237,9 +374,18 @@
 }
 
 @keyframes jeton-fly {
-  0%   { transform: translateY(0) scale(1); opacity: 1; }
-  40%  { transform: translateY(-10px) scale(1); opacity: 1; }
-  100% { transform: translateY(-22px) scale(0.4); opacity: 0; }
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-10px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-22px) scale(0.4);
+    opacity: 0;
+  }
 }
 
 .anim-coin-rain {
