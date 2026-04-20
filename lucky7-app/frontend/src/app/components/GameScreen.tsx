@@ -324,12 +324,6 @@ function JackpotBadge() {
   }, []);
 
   const allLocked = locked.every(Boolean);
-  const [rainKey, setRainKey] = useState(0);
-  const prevAllLocked = useRef(false);
-  useEffect(() => {
-    if (allLocked && !prevAllLocked.current) setRainKey(k => k + 1);
-    prevAllLocked.current = allLocked;
-  }, [allLocked]);
 
   return (
     <span className="relative inline-flex items-center gap-px bg-green-500/15 border border-green-500/40 rounded px-1 py-px font-black tabular-nums leading-none text-[11px]">
@@ -344,7 +338,7 @@ function JackpotBadge() {
       {allLocked &&
         [0, 1, 2].map(i => (
           <span
-            key={`${rainKey}-${i}`}
+            key={i}
             className="anim-coin-rain"
             style={{ right: `${i * 10}px`, animationDelay: `${i * 0.12}s`, zIndex: 50 }}
           >
