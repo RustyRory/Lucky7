@@ -325,12 +325,11 @@ function JackpotBadge() {
 
   const allLocked = locked.every(Boolean);
   const [rainKey, setRainKey] = useState(0);
-  const wasLocked = useRef(false);
-  if (allLocked && !wasLocked.current) {
-    wasLocked.current = true;
-    setRainKey(k => k + 1);
-  }
-  if (!allLocked) wasLocked.current = false;
+  const prevAllLocked = useRef(false);
+  useEffect(() => {
+    if (allLocked && !prevAllLocked.current) setRainKey(k => k + 1);
+    prevAllLocked.current = allLocked;
+  }, [allLocked]);
 
   return (
     <span className="relative inline-flex items-center gap-px bg-green-500/15 border border-green-500/40 rounded px-1 py-px font-black tabular-nums leading-none text-[11px]">
