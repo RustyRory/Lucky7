@@ -138,7 +138,7 @@ function useSlotMachine(rolling: boolean, direction: 'up' | 'down' = 'up'): numb
 
 const SLOT_STYLES = {
   jackpot: {
-    active: 'border-yellow-500/70 bg-yellow-500/10 text-yellow-500 dark:text-yellow-400',
+    active: 'border-green-500/70 bg-green-500/10 text-green-500 dark:text-green-400',
     idle: 'border-border text-muted-foreground',
   },
   demon: {
@@ -172,32 +172,203 @@ function SlotMachineDisplay({
   );
 }
 
-// Animation d'un jeton qui monte et disparaît (+1 au pot)
-function CoinAnimation() {
-  const [stage, setStage] = useState(0);
+const CONFETTI_COLORS = [
+  '#f59e0b',
+  '#ef4444',
+  '#3b82f6',
+  '#10b981',
+  '#8b5cf6',
+  '#f97316',
+  '#ec4899',
+  '#14b8a6',
+];
+
+function TrophyConfetti() {
+  return (
+    <span className="relative inline-block">
+      🏆
+      {CONFETTI_COLORS.map((color, i) => (
+        <span
+          key={i}
+          className="anim-confetti-particle"
+          style={
+            {
+              backgroundColor: color,
+              '--a': `${i * 45}deg`,
+              animationDelay: `${(i * 0.14) % 1.1}s`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </span>
+  );
+}
+
+// ── Jackpot badge coordinator ────────────────────────────────────────────────
+// Assigns one of 3 durations (2s/4s/5s) to each badge by registration order.
+// When all badges finish, reshuffles and restarts everyone simultaneously.
+const JACKPOT_TIERS = [1200, 2500, 4000];
+
+function jShuffle(arr: number[]): number[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const jackpotCoord = (() => {
+  let assignments = jShuffle(JACKPOT_TIERS);
+  let slots: Array<(d: number) => void> = [];
+  let done = 0;
+  return {
+    register(cb: (d: number) => void): number {
+      const idx = slots.length;
+      slots.push(cb);
+      return assignments[idx] ?? JACKPOT_TIERS[0];
+    },
+    unregister(cb: (d: number) => void) {
+      slots = slots.filter(s => s !== cb);
+      if (slots.length === 0) {
+        assignments = jShuffle(JACKPOT_TIERS);
+        done = 0;
+      }
+    },
+    reportDone() {
+      done++;
+      if (done >= slots.length && slots.length > 0) {
+        setTimeout(() => {
+          done = 0;
+          assignments = jShuffle(JACKPOT_TIERS);
+          slots.forEach((cb, i) => cb(assignments[i]));
+        }, 1000);
+      }
+    },
+  };
+})();
+
+function JackpotBadge() {
+  const [reels, setReels] = useState([7, 7, 7]);
+  const [locked, setLocked] = useState([false, false, false]);
+  const r = useRef<{ timers: ReturnType<typeof setTimeout>[]; duration: number; spin: () => void }>(
+    {
+      timers: [],
+      duration: 2000,
+      spin: () => {},
+    }
+  );
+
   useEffect(() => {
-    const t1 = setTimeout(() => setStage(1), 80);
-    const t2 = setTimeout(() => setStage(2), 680);
+    function clearAll() {
+      r.current.timers.forEach(t => {
+        clearTimeout(t);
+        clearInterval(t as unknown as ReturnType<typeof setInterval>);
+      });
+      r.current.timers = [];
+    }
+
+    r.current.spin = function spin() {
+      clearAll();
+      setLocked([false, false, false]);
+
+      const base = r.current.duration;
+      const ivals: ReturnType<typeof setInterval>[] = [];
+
+      [0, 1, 2].forEach(i => {
+        const id = setInterval(
+          () => {
+            setReels(prev => {
+              const n = [...prev];
+              n[i] = Math.floor(Math.random() * 9) + 1;
+              return n;
+            });
+          },
+          80 + i * 15
+        );
+        r.current.timers.push(id as unknown as ReturnType<typeof setTimeout>);
+        ivals.push(id);
+      });
+
+      [base, base + 400, base + 800].forEach((delay, i) => {
+        const t = setTimeout(() => {
+          clearInterval(ivals[i]);
+          setReels(prev => {
+            const n = [...prev];
+            n[i] = 7;
+            return n;
+          });
+          setLocked(prev => {
+            const n = [...prev];
+            n[i] = true;
+            return n;
+          });
+          // Last reel done — signal coordinator; wait for all badges before restart
+          if (i === 2) jackpotCoord.reportDone();
+        }, delay);
+        r.current.timers.push(t);
+      });
+    };
+
+    const cb = (d: number) => {
+      r.current.duration = d;
+      r.current.spin();
+    };
+    r.current.duration = jackpotCoord.register(cb);
+    r.current.spin();
+
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      jackpotCoord.unregister(cb);
+      clearAll();
     };
   }, []);
+
+  const allLocked = locked.every(Boolean);
+
   return (
-    <span
-      className="absolute right-3 top-1 text-lg pointer-events-none select-none z-20"
-      style={{
-        transform:
-          stage === 2
-            ? 'translateY(-22px) scale(0.4)'
-            : stage === 1
-              ? 'translateY(-10px)'
-              : 'translateY(0)',
-        opacity: stage === 2 ? 0 : 1,
-        transition: 'transform 0.55s ease-out, opacity 0.28s ease-in 0.42s',
-      }}
-    >
-      🪙
+    <span className="relative inline-flex items-center gap-px bg-green-500/15 border border-green-500/40 rounded px-1 py-px font-black tabular-nums leading-none text-[11px]">
+      {reels.map((n, i) => (
+        <span
+          key={i}
+          className={`w-[9px] text-center transition-colors duration-150 ${locked[i] ? 'text-yellow-400' : 'text-green-400'}`}
+        >
+          {n}
+        </span>
+      ))}
+      {allLocked &&
+        [0, 1, 2].map(i => (
+          <span
+            key={i}
+            className="anim-coin-rain"
+            style={{ right: `${i * 10}px`, animationDelay: `${i * 0.12}s`, zIndex: 50 }}
+          >
+            🪙
+          </span>
+        ))}
+    </span>
+  );
+}
+
+function DoubleBadge({ value }: { value: number }) {
+  const [display, setDisplay] = useState(1);
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let cumulative = 0;
+    for (let target = 2; target <= value; target++) {
+      // x1=1.2s, x2=1s, x3=0.8s, x4=0.6s, x5+=0.3s min
+      cumulative += Math.max(300, 1200 - (target - 2) * 200);
+      const t = setTimeout(() => setDisplay(target), cumulative);
+      timers.push(t);
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [value]);
+
+  return (
+    <span className="inline-flex items-center bg-blue-500/15 border border-blue-500/40 rounded px-1 py-px font-black tabular-nums leading-none text-[11px] text-blue-400">
+      <span key={display} className="anim-badge-slam">
+        x{display}
+      </span>
     </span>
   );
 }
@@ -1161,8 +1332,7 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                     rolledDice.filter(r => r.score === 7).length === 3;
                   const demonVisible =
                     allRolled && rules.demon && rolledDice.filter(r => r.score === 6).length === 3;
-                  const legendeVisible =
-                    allRolled && rules.legende && rolledDice.some(r => r.score === 11);
+                  const legendeVisible = rules.legende && rolledDice.some(r => r.score === 11);
 
                   return players.map((player, index) => {
                     const roll = rolledDice.find(r => r.playerId === player.id);
@@ -1185,6 +1355,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                       !isDemonPlayer &&
                       legendeVisible &&
                       (roll.dice1 >= 5 || roll.dice2 >= 5);
+                    const isLegendeTrigger =
+                      revealed &&
+                      !isJackpotPlayer &&
+                      !isDemonPlayer &&
+                      legendeVisible &&
+                      roll.score === 11;
                     const isJeton =
                       revealed &&
                       !isJackpotPlayer &&
@@ -1201,20 +1377,22 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                     const isRelanced = relancedPlayerIds.has(player.id);
 
                     const containerClass = [
-                      'relative overflow-hidden flex items-center justify-between rounded-lg border px-3 py-2 transition-colors',
+                      'relative overflow-hidden flex items-center justify-between rounded-lg border px-3 py-2',
                       isRelanceRow
                         ? 'border-yellow-500/40 bg-yellow-500/10'
                         : isJackpotPlayer
-                          ? 'bg-emerald-900/25 border-emerald-500/50'
+                          ? 'anim-jackpot'
                           : isDemonPlayer
-                            ? 'bg-red-950/40 border-red-700/60'
+                            ? 'anim-demon'
                             : isMarchand
-                              ? 'bg-amber-800/15 border-amber-500/40'
+                              ? 'anim-marchand'
                               : isDouble
-                                ? 'bg-blue-500/10 border-blue-500/40'
-                                : isCurrent && !roll
-                                  ? 'border-primary/40 bg-primary/5'
-                                  : 'border-border',
+                                ? 'anim-double'
+                                : isLegendeTrigger
+                                  ? 'bg-purple-900/30 border-purple-400/60'
+                                  : isCurrent && !roll
+                                    ? 'border-primary/40 bg-primary/5'
+                                    : 'border-border',
                     ].join(' ');
 
                     return (
@@ -1223,10 +1401,10 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                         {isJackpotPlayer && (
                           <>
                             <span className="absolute right-1 top-0 text-xl opacity-[0.12] select-none pointer-events-none leading-tight">
-                              ♠♥
+                              🍀
                             </span>
                             <span className="absolute right-7 bottom-0 text-lg opacity-[0.10] select-none pointer-events-none leading-tight">
-                              ♦♣
+                              🍀
                             </span>
                           </>
                         )}
@@ -1235,29 +1413,17 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                             🔥
                           </span>
                         )}
-                        {isMarchand && (
-                          <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
-                            ☀️🏜️
-                          </span>
-                        )}
-                        {isLegende && (
-                          <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
-                            ⚔️🛡️
-                          </span>
-                        )}
+
                         {isDouble && (
                           <span className="absolute right-1 top-0 text-5xl font-black opacity-[0.18] select-none pointer-events-none leading-tight text-blue-300">
                             {roll.dice1}
                           </span>
                         )}
-                        {isJeton && <CoinAnimation />}
-
                         {/* Gauche : nom */}
                         <div className="flex items-center gap-2 min-w-0 relative z-10">
                           {isCurrent && !roll && !rolling && (
                             <span className="text-xs text-primary shrink-0">▶</span>
                           )}
-                          {isMarchand && <span>🌙</span>}
                           <span
                             className={`text-sm font-medium truncate ${
                               !roll && !isCurrent ? 'text-muted-foreground' : ''
@@ -1265,10 +1431,12 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                           >
                             {player.name}
                           </span>
-                          {isJackpotPlayer && <span>🎰</span>}
-                          {isDemonPlayer && <span>😈</span>}
-                          {isLegende && <span>⭐</span>}
-                          {isJeton && <span>🪙</span>}
+                          {isMarchand && <span>🌙</span>}
+                          {isJackpotPlayer && <JackpotBadge />}
+                          {isDemonPlayer && <span className="anim-demon-laugh">😈</span>}
+                          {isDouble && <DoubleBadge value={roll.dice1} />}
+                          {isLegende && <span className="anim-badge-pop">⭐</span>}
+                          {isJeton && <span className="anim-badge-pop">🪙</span>}
                           {isRelanced && (
                             <Badge variant="outline" className="text-xs shrink-0">
                               Relancé
@@ -1790,10 +1958,10 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                       {isJackpotPlayer && (
                         <>
                           <span className="absolute right-1 top-0 text-xl opacity-[0.12] select-none pointer-events-none leading-tight">
-                            ♠♥
+                            🍀
                           </span>
                           <span className="absolute right-7 bottom-0 text-lg opacity-[0.10] select-none pointer-events-none leading-tight">
-                            ♦♣
+                            🍀
                           </span>
                         </>
                       )}
@@ -1802,31 +1970,21 @@ export default function GameScreen({ players: initialPlayers, rules, onEnd }: Ga
                           🔥
                         </span>
                       )}
-                      {isMarchand && (
-                        <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
-                          ☀️🏜️
-                        </span>
-                      )}
-                      {isLegende && (
-                        <span className="absolute right-1 top-0 text-xl opacity-[0.18] select-none pointer-events-none leading-tight">
-                          ⚔️🛡️
-                        </span>
-                      )}
+
                       {isDouble && (
                         <span className="absolute right-1 top-0 text-5xl font-black opacity-[0.18] select-none pointer-events-none leading-tight text-blue-300">
                           {s.dice1}
                         </span>
                       )}
-                      {isJeton && <CoinAnimation />}
-
                       {/* ── Contenu principal ── */}
                       <div className="flex items-center gap-2 flex-wrap relative z-10">
-                        {isLucky && <span>🏆</span>}
-                        {isLooser && !isLucky && <span>💀</span>}
-                        {isMarchand && <span>🌙</span>}
+                        {isLucky && <TrophyConfetti />}
+                        {isLooser && !isLucky && <span className="anim-skull-decompose">💀</span>}
                         <span className="text-sm font-medium">{s.player.name}</span>
-                        {isJackpotPlayer && <span>🎰</span>}
-                        {isDemonPlayer && <span>😈</span>}
+                        {isMarchand && <span>🌙</span>}
+                        {isJackpotPlayer && <JackpotBadge />}
+                        {isDemonPlayer && <span className="anim-demon-laugh">😈</span>}
+                        {isDouble && <DoubleBadge value={s.dice1} />}
                         {isLegende && <span>⭐</span>}
                         {isJeton && <span>🪙</span>}
                         {isRelanced && (

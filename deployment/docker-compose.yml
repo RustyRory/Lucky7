@@ -1,0 +1,24 @@
+services:
+  lucky7-front:
+    build:
+      context: ../lucky7-app/frontend
+      args:
+        NEXT_BASE_PATH: /Lucky7
+        NEXT_PUBLIC_BACKEND_URL: http://78.138.58.95/Lucky7-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:3000"
+    depends_on:
+      - lucky7-back
+
+  lucky7-back:
+    build:
+      context: ../lucky7-app/backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4001:4000"
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      HOST: lucky7-back
+      MONGO_URI: mongodb://mongo:27017/lucky7

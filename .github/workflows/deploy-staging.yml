@@ -116,61 +116,18 @@ jobs:
     needs: [lint, test-unit, test-e2e]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Trigger update via vps-monitor
+        run: |
+          curl -sf -c cookies.txt \
+            -X POST "${{ secrets.VPS_MONITOR_URL }}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d '{"username":"${{ secrets.VPS_MONITOR_USER }}","password":"${{ secrets.VPS_MONITOR_PASS }}"}' \
+            | grep -q '"ok":true' || { echo "Échec login vps-monitor"; exit 1; }
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          command_timeout: 30m
-          script: |
-            set -e
-            echo "🚀 Déploiement Lucky7 — staging"
+          curl -sf -b cookies.txt \
+            -X POST "${{ secrets.VPS_MONITOR_URL }}/api/deploy/update" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Lucky7"}' \
+            | grep -q '"ok":true' || { echo "Échec update vps-monitor"; exit 1; }
 
-            REPO_DIR="/var/www/Lucky7"
-            COMPOSE_FILE="/var/www/docker-compose.yml"
-
-            # ── Cloner ou mettre à jour le repo ──────────────────────────
-            if [ ! -d "$REPO_DIR/.git" ]; then
-              echo "📥 Premier déploiement — clonage du repo..."
-              git clone https://github.com/${{ github.repository }}.git "$REPO_DIR"
-              git -C "$REPO_DIR" checkout staging
-            else
-              echo "🔄 Mise à jour du code..."
-              git -C "$REPO_DIR" fetch origin staging
-              git -C "$REPO_DIR" reset --hard origin/staging
-            fi
-            echo "✅ Code à jour"
-
-            # ── Vérifier que le .env backend existe ───────────────────────
-            ENV_FILE="$REPO_DIR/lucky7-app/backend/.env"
-            if [ ! -f "$ENV_FILE" ]; then
-              echo "❌ Fichier .env manquant : $ENV_FILE"
-              echo "   Créez-le manuellement sur le VPS avant de déployer."
-              exit 1
-            fi
-            echo "✅ Fichier .env backend trouvé"
-
-            # ── Rebuild et restart uniquement les services Lucky7 ─────────
-            echo "🔨 Build des images..."
-            docker-compose -f "$COMPOSE_FILE" build lucky7-back lucky7-front
-
-            echo "🔄 Redémarrage des containers..."
-            docker-compose -f "$COMPOSE_FILE" up -d --remove-orphans lucky7-back lucky7-front
-
-            echo "✅ Containers démarrés"
-
-            # ── Nettoyage des images obsolètes ────────────────────────────
-            docker image prune -f
-
-            # ── Vérification finale ───────────────────────────────────────
-            echo ""
-            echo "📊 État des containers Lucky7 :"
-            docker ps --filter "name=lucky7-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-            echo ""
-            echo "🎉 Déploiement terminé !"
+          echo "Déploiement déclenché : http://78.138.58.95/Lucky7/"

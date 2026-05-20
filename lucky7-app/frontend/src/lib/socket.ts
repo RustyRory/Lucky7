@@ -7,7 +7,15 @@ let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    socket = io(BACKEND_URL, { autoConnect: false });
+    const url = new URL(BACKEND_URL);
+    const hasPath = url.pathname && url.pathname !== '/';
+    // Quand le backend est derrière un reverse proxy avec un préfixe (ex: /Lucky7-api),
+    // socket.io-client interprète ce préfixe comme un namespace, pas un path.
+    // On extrait donc l'origine et on construit le path socket.io manuellement.
+    socket = io(url.origin, {
+      path: hasPath ? url.pathname.replace(/\/$/, '') + '/socket.io' : '/socket.io',
+      autoConnect: false,
+    });
   }
   return socket;
 }
