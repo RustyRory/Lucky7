@@ -1,5 +1,6 @@
 services:
   lucky7-front:
+    image: lucky7-front:latest
     build:
       context: ../lucky7-app/frontend
       args:
@@ -12,6 +13,7 @@ services:
       - lucky7-back
 
   lucky7-back:
+    image: lucky7-back:latest
     build:
       context: ../lucky7-app/backend
     restart: unless-stopped
