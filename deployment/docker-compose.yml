@@ -3,6 +3,7 @@ services:
     image: lucky7-front:latest
     build:
       context: ../lucky7-app/frontend
+      dockerfile: Dockerfile
       args:
         NEXT_BASE_PATH: /Lucky7
         NEXT_PUBLIC_BACKEND_URL: http://78.138.58.95/Lucky7-api
@@ -16,6 +17,7 @@ services:
     image: lucky7-back:latest
     build:
       context: ../lucky7-app/backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "127.0.0.1:4001:4000"
